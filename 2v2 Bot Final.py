@@ -11,7 +11,7 @@ dotenv.load_dotenv()
 token = os.getenv("TOKEN")
 
 #Google API Credentials
-gc = gspread.service_account(filename=r"C:\Users\jamar\Documents\Hobbies\Gaming\League of Legends\2v2 Bot\v2-bot-374602-82a3f980ecb8.json")
+gc = gspread.service_account(filename=r"C:\Users\jamar\Documents\Hobbies\Coding\2v2 Bot\v2-bot-374602-e64743327d13.json")
 
 botlane_database = gc.open_by_url('https://docs.google.com/spreadsheets/d/134T4caUqFHG3crrS_Rk9Z3ON5o6mc19tPt4kTm4R834')
 Botlaners = botlane_database.get_worksheet_by_id(0)
