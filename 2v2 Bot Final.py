@@ -26,8 +26,8 @@ intents = discord.Intents.all()
 bot = commands.Bot(command_prefix='/', intents=intents)    
 
 #building the Queue (creating ADC_queue & support_queue list) 
-ADC_queue = [] 
-Support_queue = {'test dummy 3': 'test champ 1', 'test dummy 4': 'test champ 1'} #remove test dummies
+ADC_queue = {} 
+Support_queue = {}
 
 #Building the Player Class
 class Player:
@@ -36,7 +36,7 @@ class Player:
         self.ign = ign
         self.rank = rank 
         self.champ = champ
-    #def __repr__(self) -> str: #supposed to make the object print as a string when I print it but is not working for some reason.
+    # #supposed to make the object print as a string when I print it but is not working for some reason.
     #    pass
 rank_as_mmr = {
     # 'Iron 4' : 100, 
@@ -96,7 +96,10 @@ async def joinadc(ctx):
         champ_pool = Botlaners.row_values(disc_id.row)[disc_id.col+2:]
         champ_selection = str(random.choice(champ_pool))
         return champ_selection
-    ADC_queue.append(Player(user,ign = Botlaners.row_values(disc_id.row)[disc_id.col],rank = Botlaners.row_values(disc_id.row)[disc_id.col+1],champ = str(get_bot_champ(user))))
+    #need to figure out how to tag the player object after I append it so I can call it
+    #could I make a dict with a key value pair like below? 
+    player = Player(user,ign = Botlaners.row_values(disc_id.row)[disc_id.col],rank = Botlaners.row_values(disc_id.row)[disc_id.col+1],champ = str(get_bot_champ(user)))
+    ADC_queue[player.disc_id] = player
     await ctx.respond(user + ' has joined the ADC queue')
     
 #/joinsupport 
@@ -108,7 +111,8 @@ async def joinsupp(ctx):
         champ_pool = Supports.row_values(disc_id.row)[disc_id.col+2:]
         champ_selection = random.choice(champ_pool)
         return(champ_selection) 
-    Support_queue.append(Player(user,ign = Supports.row_values(disc_id.row)[disc_id.col],rank = Supports.row_values(disc_id.row)[disc_id.col+1],champ = str(get_supp_champ(user))))
+    player = Player(user,ign = Supports.row_values(disc_id.row)[disc_id.col],rank = Supports.row_values(disc_id.row)[disc_id.col+1],champ = str(get_supp_champ(user)))
+    Support_queue[player.disc_id] = player
     await ctx.respond(user + ' has joined the Support queue')
 
 #/leaveadc
@@ -160,19 +164,19 @@ async def pop_queue():
     #Make red loop every minute the MMR band each loop until +/- 2000 then reset.
         choose_blue()
         choose_red()   
-    Players = [Blue_ADC, Red_ADC, Blue_Support, Red_Support] #not sure why it is claiming these variables do not exist.
-    lobby_creator = random.choice(Players)
-    lobby_name = lobby_creator +"'s Lobby" + str(random.randint(0,105))
-    password = 'RSS' + str(random.randint(0,10043)) 
-    match_info = (  
-        'Lobby Creator: ' + lobby_creator +'\n'+ 
-        'Lobby Name: '+ lobby_name +'\n'+
-        'Password: '+ password +'\n'+
-        'Blue Side ADC: ' + Blue_ADC[0] + ' playing ' + Blue_ADC[1] +'\n'+
-        'Red Side ADC: ' + Red_ADC[0] + ' playing ' + Red_ADC[1] +'\n'+
-        'Blue Side Support: ' + Blue_Support[0] + ' playing ' + Blue_Support[1] +'\n'+
-        'Red Side Support: ' + Red_Support[0] + ' playing ' + Red_Support[1])
-    channel = bot.get_channel(1063664070034718760) #bot test channel ID
-    await channel.send(match_info) 
+    #Players = [Blue_ADC, Red_ADC, Blue_Support, Red_Support] #not sure why it is claiming these variables do not exist.
+    #lobby_creator = random.choice(Players)
+    #lobby_name = lobby_creator +"'s Lobby" + str(random.randint(0,105))
+    #password = 'RSS' + str(random.randint(0,10043)) 
+    #match_info = (  
+    #    'Lobby Creator: ' + lobby_creator +'\n'+ 
+    #    'Lobby Name: '+ lobby_name +'\n'+
+    #    'Password: '+ password +'\n'+
+    #    'Blue Side ADC: ' + Blue_ADC[0] + ' playing ' + Blue_ADC[1] +'\n'+
+    #    'Red Side ADC: ' + Red_ADC[0] + ' playing ' + Red_ADC[1] +'\n'+
+    #    'Blue Side Support: ' + Blue_Support[0] + ' playing ' + Blue_Support[1] +'\n'+
+    #    'Red Side Support: ' + Red_Support[0] + ' playing ' + Red_Support[1])
+    #channel = bot.get_channel(1063664070034718760) #bot test channel ID
+    #await channel.send(match_info) 
   
 bot.run(token)
