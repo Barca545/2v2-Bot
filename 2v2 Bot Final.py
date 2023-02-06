@@ -6,6 +6,7 @@ import dotenv
 from discord.ext import commands, tasks
 from discord.commands import Option
 dotenv.load_dotenv()
+#os.system("python Matchmacking.py")
 
 #Discord Token
 token = os.getenv("TOKEN")
@@ -24,9 +25,46 @@ Supports = botlane_database.get_worksheet_by_id(1953196714)
 intents = discord.Intents.all()
 bot = commands.Bot(command_prefix='/', intents=intents)    
 
-#building the Queue (creating ADC_queue & support_queue dict) 
-ADC_queue = {'test dummy 1': 'test champ 1'} #remove test dummies
+#building the Queue (creating ADC_queue & support_queue list) 
+ADC_queue = [] 
 Support_queue = {'test dummy 3': 'test champ 1', 'test dummy 4': 'test champ 1'} #remove test dummies
+
+#Building the Player Class
+class Player:
+    def __init__ (self, disc_id, ign, rank, champ):
+        self.disc_id = disc_id
+        self.ign = ign
+        self.rank = rank 
+        self.champ = champ
+rank_as_mmr = {
+    # 'Iron 4' : 100, 
+    # 'Iron 3' : 200, 
+    # 'Iron 2' : 300,
+    # 'Iron 1' : 400,
+    'Bronze 4' : 500,
+    'Bronze 3' : 600,
+    'Bronze 2' : 700,
+    'Bronze 1' : 800,
+    'Silver 4' : 900,
+    'Silver 3' : 1000,
+    'Silver 2' : 1100,
+    'Silver 1' : 1200,
+    'Gold 4' : 1300,
+    'Gold 3' : 1400,
+    'Gold 2' : 1500,
+    'Gold 1' : 1600,
+    'Platinum 4' : 1700,
+    'Platinum 3' : 1800,
+    'Platinum 2' : 1900,
+    'Platinum 1' : 2000,
+    'Diamond 4' : 2100,
+    'Diamond 3' : 2200,
+    'Diamond 2' : 2300,
+    'Diamond 1' : 2400,
+    'Master' : 2600,
+    'Grandmaster' : 3000,
+    'Challenger' : 3500,
+    }
 
 #discord set up
 @bot.event
@@ -36,8 +74,8 @@ async def on_ready():
 
 #/setup
 @bot.slash_command()
-async def setup(ctx, ign, 
-    role: Option(choices=['ADC','Support']), 
+async def setup(ctx, ign, rank: Option(choices=rank_as_mmr),
+    role: Option(choices=['ADC','Support']), #rank: Option(choices=[rank_as_mmr]),
     champ_1, champ_2, champ_3):             
     user = '{}'.format(ctx.author)
     if role == 'ADC':
@@ -51,19 +89,18 @@ async def setup(ctx, ign,
 @bot.slash_command()
 async def joinadc(ctx):
     user = str(Botlaners.find('{}'.format(ctx.author)).value)
-    def get_bot_champ(user):
-        disc_id = Botlaners.find(user)
+    disc_id = Botlaners.find(user)
+    def get_bot_champ(user):  #there has got to be a cleaner way of doing this 
         champ_pool = Botlaners.row_values(disc_id.row)[disc_id.col+2:]
-        champ_selection = random.choice(champ_pool)
-        return(champ_selection)    
-    champ = str(get_bot_champ(user)) 
-    ADC_queue[user] = champ 
-    await ctx.respond(user + ' has joined the ADC queue' )
+        champ_selection = str(random.choice(champ_pool))
+        return champ_selection
+    ADC_queue.append(Player(user,ign = Botlaners.row_values(disc_id.row)[disc_id.col],rank = Botlaners.row_values(disc_id.row)[disc_id.col+1],champ = str(get_bot_champ(user))))
+    await ctx.respond(user + ' has joined the ADC queue')
     
 #/joinsupport 
 @bot.slash_command()
 async def joinsupp(ctx): 
-    user = str(Botlaners.find('{}'.format(ctx.author)).value)
+    user = str(Supports.find('{}'.format(ctx.author)).value)
     def get_supp_champ(user):
         disc_id = Supports.find(user)
         champ_pool = Supports.row_values(disc_id.row)[disc_id.col+2:]
