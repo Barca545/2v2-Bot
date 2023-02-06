@@ -140,43 +140,50 @@ async def showqueues(ctx):
     
 @tasks.loop(seconds=30) #make longer amount of time
 async def pop_queue(): 
-    #generate initial pair
     def choose_blue():
-            Blue_ADC = random.choice(ADC_queue)
-            Blue_support = random.choice(Support_queue)
-            del ADC_queue[Blue_ADC] #this won't work because they are not named in the list need a solution.
-            del ADC_queue[Blue_support] #this won't work because they are not named in the list need a solution.
-            blue_pair_rank = sum(Blue_ADC.rank, Blue_support.rank)
-            return Blue_ADC and Blue_support and blue_pair_rank
-    def choose_red(ADC_queue, Support_queue, blue_pair_rank): 
-        for i in range(len(ADC_queue)): 
-            for j in range(len(Support_queue)): 
-                if ADC_queue[i] + Support_queue[j] >= blue_pair_rank-50 or ADC_queue[i] + Support_queue[j] <= blue_pair_rank+50:
-                    Red_ADC = i
-                    Red_support = j
-                    Red_pair_rank = sum(Red_ADC.rank,Red_support.rank)
-                    return Red_ADC and Red_support and Red_pair_rank
-                else:
-                    return False
-    if len(ADC_queue)>=1 and len(Support_queue)>=2:
-    #find a way to make the above functions loop.
-    #blue can run constantly, but red can only run if blue is able to complete. 
-    #Make red loop every minute the MMR band each loop until +/- 2000 then reset.
-        choose_blue()
-        choose_red()   
-    #Players = [Blue_ADC, Red_ADC, Blue_Support, Red_Support] #not sure why it is claiming these variables do not exist.
-    #lobby_creator = random.choice(Players)
-    #lobby_name = lobby_creator +"'s Lobby" + str(random.randint(0,105))
-    #password = 'RSS' + str(random.randint(0,10043)) 
-    #match_info = (  
-    #    'Lobby Creator: ' + lobby_creator +'\n'+ 
-    #    'Lobby Name: '+ lobby_name +'\n'+
-    #    'Password: '+ password +'\n'+
-    #    'Blue Side ADC: ' + Blue_ADC[0] + ' playing ' + Blue_ADC[1] +'\n'+
-    #    'Red Side ADC: ' + Red_ADC[0] + ' playing ' + Red_ADC[1] +'\n'+
-    #    'Blue Side Support: ' + Blue_Support[0] + ' playing ' + Blue_Support[1] +'\n'+
-    #    'Red Side Support: ' + Red_Support[0] + ' playing ' + Red_Support[1])
-    #channel = bot.get_channel(1063664070034718760) #bot test channel ID
-    #await channel.send(match_info) 
+            blue_ADC = random.choice(ADC_queue)
+            blue_support = random.choice(Support_queue)
+            del ADC_queue[blue_ADC.disc_id] #this won't work because they are not named in the list need a solution.
+            del ADC_queue[blue_support.disc_id] #this won't work because they are not named in the list need a solution.
+            blue_pair_rank = sum(blue_ADC.rank, blue_support.rank)
+            return (blue_ADC, blue_support, blue_pair_rank)
+    
+    if len(ADC_queue)>=2 and len(Support_queue)>=2: 
+        blue_pair = choose_blue()
+        blue_ADC = blue_pair[0]
+        blue_support = blue_pair[1]
+        blue_pair_rank = blue_pair[2]
+#Make red loop every minute. Increase the MMR band by 100 each loop until +/- 2000 then reset.
+        while blue_pair_rank >  0: 
+            def choose_red(ADC_queue, Support_queue, blue_pair_rank): 
+                for i in range(len(ADC_queue)): 
+                    for j in range(len(Support_queue)): 
+                        if ADC_queue[i] + Support_queue[j] >= blue_pair_rank-50 or ADC_queue[i] + Support_queue[j] <= blue_pair_rank+50:
+                            red_ADC = i
+                            red_support = j
+                            red_pair_rank = sum(red_ADC.rank,red_support.rank)
+                            return(red_ADC, red_support, red_pair_rank)
+                        else:
+                            return False
+            return choose_red()
+        red_pair = choose_red() 
+        red_ADC = red_pair[0]
+        red_support = red_pair[1]
+        red_pair_rank = red_pair[2]    
+        Players = [blue_ADC, red_ADC, blue_support, red_support] #not sure why it is claiming these variables do not exist.
+        lobby_creator = random.choice(Players)
+        lobby_name = lobby_creator +"'s Lobby" + str(random.randint(0,105))
+        password = 'RSS' + str(random.randint(0,10043)) 
+        match_info = (  
+        'Lobby Creator: ' + lobby_creator +'\n'+ 
+        'Lobby Name: '+ lobby_name +'\n'+
+        'Password: '+ password +'\n'+
+        'Blue Side ADC: ' + blue_ADC.ign + ' playing ' + blue_ADC.champ +'\n'+
+        'Red Side ADC: ' + red_ADC.ign + ' playing ' + red_ADC.champ +'\n'+
+        'Blue Side Support: ' + blue_support.ign + ' playing ' + blue_support.champ +'\n'+
+        'Red Side Support: ' + red_support.ign + ' playing ' + red_support.champ +'\n'+
+        'Elo Difference: ' )
+    channel = bot.get_channel(1063664070034718760) #bot test channel ID
+    await channel.send(match_info) 
   
 bot.run(token)
