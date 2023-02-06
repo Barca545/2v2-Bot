@@ -36,6 +36,8 @@ class Player:
         self.ign = ign
         self.rank = rank 
         self.champ = champ
+    #def __repr__(self) -> str: #supposed to make the object print as a string when I print it but is not working for some reason.
+    #    pass
 rank_as_mmr = {
     # 'Iron 4' : 100, 
     # 'Iron 3' : 200, 
@@ -135,38 +137,43 @@ async def showqueues(ctx):
     
 @tasks.loop(seconds=30) #make longer amount of time
 async def pop_queue(): 
-    if len(ADC_queue)>=2 and len(Support_queue)>=2:
-        def choose_ADC():
-            ADC_Player = random.choice(list(ADC_queue)) 
-            ADC_Champion = ADC_queue[ADC_Player]
-            del ADC_queue[ADC_Player]
-            ADC = [ADC_Player, ADC_Champion]
-            return ADC
-        def choose_Support():
-            Support_Player = random.choice(list(Support_queue)) 
-            Support_Champion = Support_queue[Support_Player]
-            del Support_queue[Support_Player]
-            Support = [Support_Player, Support_Champion]
-            return Support
-        Blue_ADC = choose_ADC()
-        Red_ADC = choose_ADC()
-        Blue_Support = choose_Support()
-        Red_Support = choose_Support()
-        Players = [Blue_ADC[0], Red_ADC[0], Blue_Support[0], Red_Support[0]]
-        lobby_creator = random.choice(Players)
-        lobby_name = lobby_creator +"'s Lobby" + str(random.randint(0,105))
-        password = 'RSS' + str(random.randint(0,10043)) 
-        match_info = (  
-            'Lobby Creator: ' + lobby_creator +'\n'+ 
-            'Lobby Name: '+ lobby_name +'\n'+
-            'Password: '+ password +'\n'+
-            'Blue Side ADC: ' + Blue_ADC[0] + ' playing ' + Blue_ADC[1] +'\n'+
-            'Red Side ADC: ' + Red_ADC[0] + ' playing ' + Red_ADC[1] +'\n'+
-            'Blue Side Support: ' + Blue_Support[0] + ' playing ' + Blue_Support[1] +'\n'+
-            'Red Side Support: ' + Red_Support[0] + ' playing ' + Red_Support[1])
-        channel = bot.get_channel(1063664070034718760) #bot test channel ID
-        await channel.send(match_info) 
-    else:
-        pass   
-    
+    #generate initial pair
+    def choose_blue():
+            Blue_ADC = random.choice(ADC_queue)
+            Blue_support = random.choice(Support_queue)
+            del ADC_queue[Blue_ADC] #this won't work because they are not named in the list need a solution.
+            del ADC_queue[Blue_support] #this won't work because they are not named in the list need a solution.
+            blue_pair_rank = sum(Blue_ADC.rank, Blue_support.rank)
+            return Blue_ADC and Blue_support and blue_pair_rank
+    def choose_red(ADC_queue, Support_queue, blue_pair_rank): 
+        for i in range(len(ADC_queue)): 
+            for j in range(len(Support_queue)): 
+                if ADC_queue[i] + Support_queue[j] >= blue_pair_rank-50 or ADC_queue[i] + Support_queue[j] <= blue_pair_rank+50:
+                    Red_ADC = i
+                    Red_support = j
+                    Red_pair_rank = sum(Red_ADC.rank,Red_support.rank)
+                    return Red_ADC and Red_support and Red_pair_rank
+                else:
+                    return False
+    #find a way to make the above functions loop.
+    #probably use 'while' 
+    choose_blue()
+    choose_red()
+    #if len(ADC_queue)>=1 and len(Support_queue)>=2:
+        
+    Players = [Blue_ADC, Red_ADC, Blue_Support, Red_Support] #not sure why it is claiming these variables do not exist.
+    lobby_creator = random.choice(Players)
+    lobby_name = lobby_creator +"'s Lobby" + str(random.randint(0,105))
+    password = 'RSS' + str(random.randint(0,10043)) 
+    match_info = (  
+        'Lobby Creator: ' + lobby_creator +'\n'+ 
+        'Lobby Name: '+ lobby_name +'\n'+
+        'Password: '+ password +'\n'+
+        'Blue Side ADC: ' + Blue_ADC[0] + ' playing ' + Blue_ADC[1] +'\n'+
+        'Red Side ADC: ' + Red_ADC[0] + ' playing ' + Red_ADC[1] +'\n'+
+        'Blue Side Support: ' + Blue_Support[0] + ' playing ' + Blue_Support[1] +'\n'+
+        'Red Side Support: ' + Red_Support[0] + ' playing ' + Red_Support[1])
+    channel = bot.get_channel(1063664070034718760) #bot test channel ID
+    await channel.send(match_info) 
+  
 bot.run(token)
