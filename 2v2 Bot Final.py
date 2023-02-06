@@ -92,7 +92,7 @@ async def setup(ctx, ign, rank: Option(choices=rank_as_mmr),
 async def joinadc(ctx):
     user = str(Botlaners.find('{}'.format(ctx.author)).value)
     disc_id = Botlaners.find(user)
-    def get_bot_champ(user):  #there has got to be a cleaner way of doing this 
+    def get_bot_champ(user):  #does the argument need to be updated?
         champ_pool = Botlaners.row_values(disc_id.row)[disc_id.col+2:]
         champ_selection = str(random.choice(champ_pool))
         return champ_selection
@@ -103,13 +103,12 @@ async def joinadc(ctx):
 @bot.slash_command()
 async def joinsupp(ctx): 
     user = str(Supports.find('{}'.format(ctx.author)).value)
-    def get_supp_champ(user):
-        disc_id = Supports.find(user)
+    disc_id = Supports.find(user)
+    def get_supp_champ(user): #does the argument need to be updated?
         champ_pool = Supports.row_values(disc_id.row)[disc_id.col+2:]
         champ_selection = random.choice(champ_pool)
         return(champ_selection) 
-    champ = str(get_supp_champ(user))
-    Support_queue[user] = champ 
+    Support_queue.append(Player(user,ign = Supports.row_values(disc_id.row)[disc_id.col],rank = Supports.row_values(disc_id.row)[disc_id.col+1],champ = str(get_supp_champ(user))))
     await ctx.respond(user + ' has joined the Support queue')
 
 #/leaveadc
@@ -155,12 +154,12 @@ async def pop_queue():
                     return Red_ADC and Red_support and Red_pair_rank
                 else:
                     return False
+    if len(ADC_queue)>=1 and len(Support_queue)>=2:
     #find a way to make the above functions loop.
-    #probably use 'while' 
-    choose_blue()
-    choose_red()
-    #if len(ADC_queue)>=1 and len(Support_queue)>=2:
-        
+    #blue can run constantly, but red can only run if blue is able to complete. 
+    #Make red loop every minute the MMR band each loop until +/- 2000 then reset.
+        choose_blue()
+        choose_red()   
     Players = [Blue_ADC, Red_ADC, Blue_Support, Red_Support] #not sure why it is claiming these variables do not exist.
     lobby_creator = random.choice(Players)
     lobby_name = lobby_creator +"'s Lobby" + str(random.randint(0,105))
