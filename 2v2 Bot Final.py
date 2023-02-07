@@ -2,6 +2,7 @@ import gspread
 import random
 import discord #I believe I am using the pycord library
 import os 
+from time import sleep 
 import dotenv 
 from discord.ext import commands, tasks
 from discord.commands import Option
@@ -138,7 +139,7 @@ async def showqueues(ctx):
         str(len(Support_queue)) + ' in the Support queue'
     )
     
-@tasks.loop(seconds=30) #make longer amount of time
+@tasks.loop(seconds=300) 
 async def pop_queue(): 
     def choose_blue():
             blue_ADC = random.choice(ADC_queue)
@@ -156,9 +157,18 @@ async def pop_queue():
 #Make red loop every minute. Increase the MMR band by 100 each loop until +/- 2000 then reset.
         while blue_pair_rank >  0: 
             def choose_red(ADC_queue, Support_queue, blue_pair_rank): 
+                #make the mmr band add 100 each min 
+                # and use an if statement to reset it once it hits 2k
+                def create_mmr_band():
+                    mmr_band = 100
+                    while mmr_band < 2000:
+                        sleep(30)
+                        mmr_band = mmr_band + 100
+                    return mmr_band
+                mmr_band = create_mmr_band()
                 for i in range(len(ADC_queue)): 
                     for j in range(len(Support_queue)): 
-                        if ADC_queue[i] + Support_queue[j] >= blue_pair_rank-50 or ADC_queue[i] + Support_queue[j] <= blue_pair_rank+50:
+                        if ADC_queue[i] + Support_queue[j] >= blue_pair_rank-mmr_band or ADC_queue[i] + Support_queue[j] <= blue_pair_rank+mmr_band:
                             red_ADC = i
                             red_support = j
                             red_pair_rank = sum(red_ADC.rank,red_support.rank)
@@ -182,8 +192,9 @@ async def pop_queue():
         'Red Side ADC: ' + red_ADC.ign + ' playing ' + red_ADC.champ +'\n'+
         'Blue Side Support: ' + blue_support.ign + ' playing ' + blue_support.champ +'\n'+
         'Red Side Support: ' + red_support.ign + ' playing ' + red_support.champ +'\n'+
-        'Elo Difference: ' )
-    channel = bot.get_channel(1063664070034718760) #bot test channel ID
-    await channel.send(match_info) 
+        'Elo Difference: ' + abs(blue_pair_rank - red_pair_rank)
+        )
+        channel = bot.get_channel(1063664070034718760) #bot test channel ID
+        await channel.send(match_info) 
   
 bot.run(token)
