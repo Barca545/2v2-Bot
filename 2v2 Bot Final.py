@@ -42,9 +42,11 @@ dummy_supp_2 = Player('Test2#303030','Test 3', 3000, 'Soraka')
 dummy_adc_1 = Player('Test3#303030','Test 3', 4500, 'MF')
 
 #Creating ADC_queue & support_queue list 
-ADC_queue = {'Test3#303030': dummy_adc_1} #Remove dummy players
-Support_queue = {'Test1#303030': dummy_supp_1,'Test2#303030': dummy_supp_2} #Remove dummy players
-
+#Test_ADC_queue = {'Test3#303030': dummy_adc_1} #Remove dummy players
+#Test_Support_queue = {'Test1#303030': dummy_supp_1,'Test2#303030': dummy_supp_2} #Remove dummy players
+ADC_queue = {} 
+Support_queue = {}
+ 
 rank_as_mmr = {
     'Iron 2' : 300,
     'Iron 1' : 400,
@@ -138,7 +140,7 @@ async def showqueues(ctx):
         + '\n'  +
         str(len(Support_queue)) + ' in the Support queue')
     
-@tasks.loop(seconds=3) #make 300 in final deploy
+@tasks.loop(seconds=300) #make 300 in final deploy
 async def pop_queue(): 
     def choose_blue():
             blue_ADC = random.choice(list(ADC_queue.values()))
@@ -152,9 +154,9 @@ async def pop_queue():
         blue_ADC = blue_pair[0]
         blue_support = blue_pair[1]
         blue_pair_rank = blue_pair[2]
-        print(str(blue_ADC.disc_id) + ' ' + str(blue_support.disc_id)) #DELETE
         if blue_pair_rank > 0: #maybe should be 'while'
-            def choose_red():                 
+            def choose_red():
+                #the actual method it uses to choose the Red side (the for loop) is witchcraft to me and I am not sure it is actually doing what I want but it seems to work?                 
                 for Red_adc_name in ADC_queue: 
                     Red_adc = ADC_queue[Red_adc_name] #gotta be a more effcient way of doing these 2 lines
                     for Red_support_name in Support_queue: 
@@ -162,7 +164,7 @@ async def pop_queue():
                         red_pair_rank = int(Red_adc.rank)+int(Red_support.rank) 
                         def mmr_tolerance(mmr_band):    
                             while (2000 > mmr_band):
-                                sleep(0) #Should this be in the higher 'while" loop?   
+                                sleep(30) #Should this be in the higher 'while" loop?   
                                 mmr_band += 100     
                                 if blue_pair_rank - red_pair_rank == mmr_band:
                                     return(Red_adc, Red_support, red_pair_rank) 
