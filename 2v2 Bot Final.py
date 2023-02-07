@@ -40,10 +40,9 @@ class Player:
     # #supposed to make the object print as a string when I print it but is not working for some reason.
     #    pass
 rank_as_mmr = {
-    # 'Iron 4' : 100, 
-    # 'Iron 3' : 200, 
-    # 'Iron 2' : 300,
-    # 'Iron 1' : 400,
+    'Iron 3' : 200, 
+    'Iron 2' : 300,
+    'Iron 1' : 400,
     'Bronze 4' : 500,
     'Bronze 3' : 600,
     'Bronze 2' : 700,
