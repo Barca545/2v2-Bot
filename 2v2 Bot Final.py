@@ -5,7 +5,7 @@ import os
 from time import sleep 
 import dotenv 
 from discord.ext import commands, tasks
-from discord.commands import Option
+from discord.commands import Option 
 dotenv.load_dotenv()
 
 #Discord Token
@@ -18,16 +18,14 @@ botlane_database = gc.open_by_url('https://docs.google.com/spreadsheets/d/134T4c
 Botlaners = botlane_database.get_worksheet_by_id(0)
 Supports = botlane_database.get_worksheet_by_id(1953196714)
 
-#Supp_Champs = ['Alistar', 'Amumu', 'Ashe', 'Bard', 'Blitzcrank', 'Brand','Braum','Heimerdinger','Ivern','Janna','Karma', 'Leona','Lulu','Lux','Malphite','Maokai','Morgana','Nami','Nautilus','Pantheon','Pyke','Rakan','Renata Glasc','Senna','Seraphine','Sona','Soraka','Swain','Tham Kench','Taric','Thresh',"Vel'Koz",'Xerath','Yuumi','Zac','Zilean','Zyra',]
+#Supp_Champs = ['Alistar', 'Amumu','Ashe', 'Blitzcrank','Braum','Heimerdinger','Janna','Leona','Lulu','Lux','Morgana','Nami','Nautilus','Pyke','Rakan','Renata Glasc','Seraphine','Sona','Soraka','Swain','Tham Kench','Taric','Thresh','Zilean','Zyra',]
 #ADC_Champs = ['Aphelios','Ashe','Caitlyn','Draven','Ezreal','Graves','Jhin','Jinx',"Kai'sa",'Kalista','Kindred',"Kog'ma",'Lucian','Miss Fortune','Samira','Senna','Quinn','Sivir','Tristana','Twitch','Varus','Vayne','Xayah','Zeri','Yasuo']
+#full list of support champs #Supp_Champs = ['Alistar', 'Amumu', 'Ashe', 'Bard', 'Blitzcrank', 'Brand','Braum','Heimerdinger','Ivern','Janna','Karma', 'Leona','Lulu','Lux','Malphite','Maokai','Morgana','Nami','Nautilus','Pantheon','Pyke','Rakan','Renata Glasc','Senna','Seraphine','Sona','Soraka','Swain','Tham Kench','Taric','Thresh',"Vel'Koz",'Xerath','Yuumi','Zac','Zilean','Zyra',]
+
 
 #discord credentials and setup
 intents = discord.Intents.all()
 bot = commands.Bot(command_prefix='/', intents=intents)    
-
-#Creating ADC_queue & support_queue list 
-ADC_queue = {} 
-Support_queue = {}
 
 #Building the Player class
 class Player:
@@ -38,6 +36,15 @@ class Player:
         self.champ = champ
     #def __repr__(self) -> str:#supposed to make the object print as a string when I print it but is not working for some reason.
     #    pass
+#Dummy players for test 
+dummy_supp_1 = Player('Test1#303030','Test 1', 1000, 'Lulu')
+dummy_supp_2 = Player('Test2#303030','Test 3', 3000, 'Soraka')
+dummy_adc_1 = Player('Test3#303030','Test 3', 4500, 'MF')
+
+#Creating ADC_queue & support_queue list 
+ADC_queue = {'Test3#303030': dummy_adc_1} #Remove dummy players
+Support_queue = {'Test1#303030': dummy_supp_1,'Test2#303030': dummy_supp_2} #Remove dummy players
+
 rank_as_mmr = {
     'Iron 2' : 300,
     'Iron 1' : 400,
@@ -74,9 +81,7 @@ async def on_ready():
 
 #/setup
 @bot.slash_command()
-async def setup(ctx, ign, rank: Option(choices=rank_as_mmr),
-    role: Option(choices=['ADC','Support']), 
-    champ_1, champ_2, champ_3):             
+async def setup(ctx, ign, rank: Option(choices=rank_as_mmr),role: Option(choices=['ADC','Support']),champ_1, champ_2, champ_3):             
     user = '{}'.format(ctx.author)
     if role == 'ADC':
         Botlaners.append_row([user, ign, rank_as_mmr[rank], champ_1, champ_2, champ_3])
@@ -133,39 +138,39 @@ async def showqueues(ctx):
         + '\n'  +
         str(len(Support_queue)) + ' in the Support queue')
     
-@tasks.loop(seconds=300) 
+@tasks.loop(seconds=3) 
 async def pop_queue(): 
     def choose_blue():
-            blue_ADC = random.choice(ADC_queue)
-            blue_support = random.choice(Support_queue)
+            blue_ADC = random.choice(list(ADC_queue.values()))
+            blue_support = random.choice(list(Support_queue.values()))
             del ADC_queue[blue_ADC.disc_id] 
-            del ADC_queue[blue_support.disc_id] 
-            blue_pair_rank = sum(blue_ADC.rank, blue_support.rank)
+            del Support_queue[blue_support.disc_id] 
+            #print(blue_ADC.rank) DELETE
+            #print(blue_support.rank) DELETE
+            blue_pair_rank = int(blue_ADC.rank) + int(blue_support.rank)
             return (blue_ADC, blue_support, blue_pair_rank)
     if len(ADC_queue)>=2 and len(Support_queue)>=2: 
         blue_pair = choose_blue()
         blue_ADC = blue_pair[0]
         blue_support = blue_pair[1]
         blue_pair_rank = blue_pair[2]
-        while blue_pair_rank >  0: 
-            def choose_red(ADC_queue, Support_queue, blue_pair_rank): 
+        if blue_pair_rank > 0: #maybe should be 'while'
+            def choose_red():#ADC_queue, Support_queue, blue_pair_rank): 
                 def create_mmr_band():
                     mmr_band = 100
-                    while mmr_band < 2000:
-                        sleep(30)
-                        mmr_band = mmr_band + 100
-                    return mmr_band
-                mmr_band = create_mmr_band()
+                    if mmr_band < 2000: #maybe should be 'if'
+                        sleep(3)
+                        new_mmr_band = mmr_band + 100
+                    return new_mmr_band
+                new_mmr_band = create_mmr_band()
                 for i in range(len(ADC_queue)): 
                     for j in range(len(Support_queue)): 
-                        if ADC_queue[i] + Support_queue[j] >= blue_pair_rank-mmr_band or ADC_queue[i] + Support_queue[j] <= blue_pair_rank+mmr_band:
-                            red_ADC = i
-                            red_support = j
-                            red_pair_rank = sum(red_ADC.rank,red_support.rank)
-                            return(red_ADC, red_support, red_pair_rank)
+                        if ADC_queue[i] + Support_queue[j] >= blue_pair_rank-new_mmr_band or ADC_queue[i] + Support_queue[j] <= blue_pair_rank+new_mmr_band:
+                            red_pair_rank = int(i.rank)+int(j.rank)
+                            return(i, j, red_pair_rank)
                         else:
                             return False
-            return choose_red()
+            choose_red()
         red_pair = choose_red() 
         red_ADC = red_pair[0]
         red_support = red_pair[1]
@@ -185,5 +190,4 @@ async def pop_queue():
         'Elo Difference: ' + abs(blue_pair_rank - red_pair_rank))
         channel = bot.get_channel(1063664070034718760) #bot test channel ID
         await channel.send(match_info) 
-  
-bot.run(token)
+bot.run(token)                                                                                                                                           
