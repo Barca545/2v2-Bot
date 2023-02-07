@@ -138,15 +138,13 @@ async def showqueues(ctx):
         + '\n'  +
         str(len(Support_queue)) + ' in the Support queue')
     
-@tasks.loop(seconds=3) 
+@tasks.loop(seconds=3) #make 300 in final deploy
 async def pop_queue(): 
     def choose_blue():
             blue_ADC = random.choice(list(ADC_queue.values()))
             blue_support = random.choice(list(Support_queue.values()))
             del ADC_queue[blue_ADC.disc_id] 
             del Support_queue[blue_support.disc_id] 
-            #print(blue_ADC.rank) DELETE
-            #print(blue_support.rank) DELETE
             blue_pair_rank = int(blue_ADC.rank) + int(blue_support.rank)
             return (blue_ADC, blue_support, blue_pair_rank)
     if len(ADC_queue)>=2 and len(Support_queue)>=2: 
@@ -154,20 +152,24 @@ async def pop_queue():
         blue_ADC = blue_pair[0]
         blue_support = blue_pair[1]
         blue_pair_rank = blue_pair[2]
-        if blue_pair_rank > 0: #maybe should be 'while'
-            def choose_red():#ADC_queue, Support_queue, blue_pair_rank): 
+        while blue_pair_rank > 0: #maybe should be 'if'
+            def choose_red(): 
                 def create_mmr_band():
                     mmr_band = 100
-                    if mmr_band < 2000: #maybe should be 'if'
-                        sleep(3)
-                        new_mmr_band = mmr_band + 100
-                    return new_mmr_band
-                new_mmr_band = create_mmr_band()
-                for i in range(len(ADC_queue)): 
-                    for j in range(len(Support_queue)): 
-                        if ADC_queue[i] + Support_queue[j] >= blue_pair_rank-new_mmr_band or ADC_queue[i] + Support_queue[j] <= blue_pair_rank+new_mmr_band:
-                            red_pair_rank = int(i.rank)+int(j.rank)
-                            return(i, j, red_pair_rank)
+                    while mmr_band < 2000: #maybe should be 'if'
+                        sleep(3) #make 30 in final deploy
+                        mmr_band = mmr_band + 100
+                        print(mmr_band)
+                    return mmr_band
+                for Red_adc_name in ADC_queue: 
+                    Red_adc = ADC_queue[Red_adc_name] #gotta be a more effcient way of doing these 2 lines
+                    for Red_support_name in Support_queue: 
+                        Red_support = Support_queue[Red_support_name]
+                        red_pair_rank = int(Red_adc.rank)+int(Red_support.rank)
+                        print(red_pair_rank)
+                        mmr_band = create_mmr_band() # Seems to be looping here before sticking it in the below function
+                        if red_pair_rank >= blue_pair_rank-mmr_band or red_pair_rank <= blue_pair_rank+mmr_band:
+                            return(Red_adc, Red_support, red_pair_rank)
                         else:
                             return False
             choose_red()
@@ -176,18 +178,18 @@ async def pop_queue():
         red_support = red_pair[1]
         red_pair_rank = red_pair[2]    
         Players = [blue_ADC, red_ADC, blue_support, red_support] 
-        lobby_creator = random.choice(Players)
+        lobby_creator = random.choice(Players).ign
         lobby_name = lobby_creator +"'s Lobby" + str(random.randint(0,105))
         password = 'RSS' + str(random.randint(0,10043)) 
         match_info = (  
-        'Lobby Creator: ' + lobby_creator +'\n'+ 
-        'Lobby Name: '+ lobby_name +'\n'+
-        'Password: '+ password +'\n'+
-        'Blue Side ADC: ' + blue_ADC.ign + ' playing ' + blue_ADC.champ +'\n'+
-        'Red Side ADC: ' + red_ADC.ign + ' playing ' + red_ADC.champ +'\n'+
-        'Blue Side Support: ' + blue_support.ign + ' playing ' + blue_support.champ +'\n'+
-        'Red Side Support: ' + red_support.ign + ' playing ' + red_support.champ +'\n'+
-        'Elo Difference: ' + abs(blue_pair_rank - red_pair_rank))
-        channel = bot.get_channel(1063664070034718760) #bot test channel ID
+        'Lobby Creator: ' + str(lobby_creator) +'\n'+ 
+        'Lobby Name: '+ str(lobby_name) +'\n'+
+        'Password: '+ str(password) +'\n'+
+        'Blue Side ADC: ' + str(blue_ADC.ign) + ' playing ' + str(blue_ADC.champ) + ' ' + str(blue_ADC.rank) +'\n'+
+        'Red Side ADC: ' + str(red_ADC.ign) + ' playing ' + str(red_ADC.champ) + ' ' + str(red_ADC.rank) +'\n'+
+        'Blue Side Support: ' + str(blue_support.ign) + ' playing ' + str(blue_support.champ) + ' ' + str(blue_support.rank) +'\n'+
+        'Red Side Support: ' + str(red_support.ign) + ' playing ' + str(red_support.champ) + ' ' + str(red_support.rank) +'\n'+
+        'Elo Difference: ' + str(abs(blue_pair_rank - red_pair_rank)))
+        channel = bot.get_channel(1063664070034718760) #bot test channel ID make it so it automatically searhes for this 
         await channel.send(match_info) 
 bot.run(token)                                                                                                                                           
