@@ -152,26 +152,23 @@ async def pop_queue():
         blue_ADC = blue_pair[0]
         blue_support = blue_pair[1]
         blue_pair_rank = blue_pair[2]
-        while blue_pair_rank > 0: #maybe should be 'if'
-            def choose_red(): 
-                def create_mmr_band():
-                    mmr_band = 100
-                    while mmr_band < 2000: #maybe should be 'if'
-                        sleep(3) #make 30 in final deploy
-                        mmr_band = mmr_band + 100
-                        print(mmr_band)
-                    return mmr_band
+        print(str(blue_ADC.disc_id) + ' ' + str(blue_support.disc_id)) #DELETE
+        if blue_pair_rank > 0: #maybe should be 'while'
+            def choose_red():                 
                 for Red_adc_name in ADC_queue: 
                     Red_adc = ADC_queue[Red_adc_name] #gotta be a more effcient way of doing these 2 lines
                     for Red_support_name in Support_queue: 
-                        Red_support = Support_queue[Red_support_name]
-                        red_pair_rank = int(Red_adc.rank)+int(Red_support.rank)
-                        print(red_pair_rank)
-                        mmr_band = create_mmr_band() # Seems to be looping here before sticking it in the below function
-                        if red_pair_rank >= blue_pair_rank-mmr_band or red_pair_rank <= blue_pair_rank+mmr_band:
-                            return(Red_adc, Red_support, red_pair_rank)
-                        else:
-                            return False
+                        Red_support = Support_queue[Red_support_name] #gotta be a more effcient way of doing these 2 lines
+                        red_pair_rank = int(Red_adc.rank)+int(Red_support.rank) 
+                        def mmr_tolerance(mmr_band):    
+                            while (2000 > mmr_band):
+                                sleep(0) #Should this be in the higher 'while" loop?   
+                                mmr_band += 100     
+                                if blue_pair_rank - red_pair_rank == mmr_band:
+                                    return(Red_adc, Red_support, red_pair_rank) 
+                                elif mmr_band == 2000: 
+                                    return(Red_adc, Red_support, red_pair_rank) 
+                return mmr_tolerance(100)                                             
             choose_red()
         red_pair = choose_red() 
         red_ADC = red_pair[0]
@@ -179,7 +176,7 @@ async def pop_queue():
         red_pair_rank = red_pair[2]    
         Players = [blue_ADC, red_ADC, blue_support, red_support] 
         lobby_creator = random.choice(Players).ign
-        lobby_name = lobby_creator +"'s Lobby" + str(random.randint(0,105))
+        lobby_name = lobby_creator +"'s Lobby" + ' ' + str(random.randint(0,105))
         password = 'RSS' + str(random.randint(0,10043)) 
         match_info = (  
         'Lobby Creator: ' + str(lobby_creator) +'\n'+ 
