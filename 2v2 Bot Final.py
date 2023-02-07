@@ -82,10 +82,10 @@ async def setup(ctx, ign, rank: Option(choices=rank_as_mmr),
     champ_1, champ_2, champ_3):             
     user = '{}'.format(ctx.author)
     if role == 'ADC':
-        Botlaners.append_row([user, ign, champ_1, champ_2, champ_3])
+        Botlaners.append_row([user, ign, rank_as_mmr[rank], champ_1, champ_2, champ_3])
     #should this be an elif?
-    if role == 'Support':
-        Supports.append_row([user, ign, champ_1, champ_2, champ_3])
+    if role == 'Support':                               
+        Supports.append_row([user, ign, rank_as_mmr[rank], champ_1, champ_2, champ_3])
     await ctx.respond(f'Setup complete GLHF {ign}!!!')
 
 #/joinadc
