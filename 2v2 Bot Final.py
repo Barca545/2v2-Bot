@@ -7,7 +7,6 @@ import dotenv
 from discord.ext import commands, tasks
 from discord.commands import Option
 dotenv.load_dotenv()
-#os.system("python Matchmacking.py")
 
 #Discord Token
 token = os.getenv("TOKEN")
@@ -26,21 +25,20 @@ Supports = botlane_database.get_worksheet_by_id(1953196714)
 intents = discord.Intents.all()
 bot = commands.Bot(command_prefix='/', intents=intents)    
 
-#building the Queue (creating ADC_queue & support_queue list) 
+#Creating ADC_queue & support_queue list 
 ADC_queue = {} 
 Support_queue = {}
 
-#Building the Player Class
+#Building the Player class
 class Player:
     def __init__ (self, disc_id, ign, rank, champ):
         self.disc_id = disc_id
         self.ign = ign
         self.rank = rank 
         self.champ = champ
-    # #supposed to make the object print as a string when I print it but is not working for some reason.
+    #def __repr__(self) -> str:#supposed to make the object print as a string when I print it but is not working for some reason.
     #    pass
 rank_as_mmr = {
-    'Iron 3' : 200, 
     'Iron 2' : 300,
     'Iron 1' : 400,
     'Bronze 4' : 500,
@@ -77,7 +75,7 @@ async def on_ready():
 #/setup
 @bot.slash_command()
 async def setup(ctx, ign, rank: Option(choices=rank_as_mmr),
-    role: Option(choices=['ADC','Support']), #rank: Option(choices=[rank_as_mmr]),
+    role: Option(choices=['ADC','Support']), 
     champ_1, champ_2, champ_3):             
     user = '{}'.format(ctx.author)
     if role == 'ADC':
@@ -92,22 +90,20 @@ async def setup(ctx, ign, rank: Option(choices=rank_as_mmr),
 async def joinadc(ctx):
     user = str(Botlaners.find('{}'.format(ctx.author)).value)
     disc_id = Botlaners.find(user)
-    def get_bot_champ(user):  #does the argument need to be updated?
+    def get_bot_champ(user): 
         champ_pool = Botlaners.row_values(disc_id.row)[disc_id.col+2:]
         champ_selection = str(random.choice(champ_pool))
         return champ_selection
-    #need to figure out how to tag the player object after I append it so I can call it
-    #could I make a dict with a key value pair like below? 
     player = Player(user,ign = Botlaners.row_values(disc_id.row)[disc_id.col],rank = Botlaners.row_values(disc_id.row)[disc_id.col+1],champ = str(get_bot_champ(user)))
     ADC_queue[player.disc_id] = player
     await ctx.respond(user + ' has joined the ADC queue')
-    
+
 #/joinsupport 
 @bot.slash_command()
 async def joinsupp(ctx): 
     user = str(Supports.find('{}'.format(ctx.author)).value)
     disc_id = Supports.find(user)
-    def get_supp_champ(user): #does the argument need to be updated?
+    def get_supp_champ(user): 
         champ_pool = Supports.row_values(disc_id.row)[disc_id.col+2:]
         champ_selection = random.choice(champ_pool)
         return(champ_selection) 
@@ -135,29 +131,24 @@ async def showqueues(ctx):
     await ctx.respond(
         str(len(ADC_queue)) + ' in the ADC queue' 
         + '\n'  +
-        str(len(Support_queue)) + ' in the Support queue'
-    )
+        str(len(Support_queue)) + ' in the Support queue')
     
 @tasks.loop(seconds=300) 
 async def pop_queue(): 
     def choose_blue():
             blue_ADC = random.choice(ADC_queue)
             blue_support = random.choice(Support_queue)
-            del ADC_queue[blue_ADC.disc_id] #this won't work because they are not named in the list need a solution.
-            del ADC_queue[blue_support.disc_id] #this won't work because they are not named in the list need a solution.
+            del ADC_queue[blue_ADC.disc_id] 
+            del ADC_queue[blue_support.disc_id] 
             blue_pair_rank = sum(blue_ADC.rank, blue_support.rank)
             return (blue_ADC, blue_support, blue_pair_rank)
-    
     if len(ADC_queue)>=2 and len(Support_queue)>=2: 
         blue_pair = choose_blue()
         blue_ADC = blue_pair[0]
         blue_support = blue_pair[1]
         blue_pair_rank = blue_pair[2]
-#Make red loop every minute. Increase the MMR band by 100 each loop until +/- 2000 then reset.
         while blue_pair_rank >  0: 
             def choose_red(ADC_queue, Support_queue, blue_pair_rank): 
-                #make the mmr band add 100 each min 
-                # and use an if statement to reset it once it hits 2k
                 def create_mmr_band():
                     mmr_band = 100
                     while mmr_band < 2000:
@@ -179,7 +170,7 @@ async def pop_queue():
         red_ADC = red_pair[0]
         red_support = red_pair[1]
         red_pair_rank = red_pair[2]    
-        Players = [blue_ADC, red_ADC, blue_support, red_support] #not sure why it is claiming these variables do not exist.
+        Players = [blue_ADC, red_ADC, blue_support, red_support] 
         lobby_creator = random.choice(Players)
         lobby_name = lobby_creator +"'s Lobby" + str(random.randint(0,105))
         password = 'RSS' + str(random.randint(0,10043)) 
@@ -191,8 +182,7 @@ async def pop_queue():
         'Red Side ADC: ' + red_ADC.ign + ' playing ' + red_ADC.champ +'\n'+
         'Blue Side Support: ' + blue_support.ign + ' playing ' + blue_support.champ +'\n'+
         'Red Side Support: ' + red_support.ign + ' playing ' + red_support.champ +'\n'+
-        'Elo Difference: ' + abs(blue_pair_rank - red_pair_rank)
-        )
+        'Elo Difference: ' + abs(blue_pair_rank - red_pair_rank))
         channel = bot.get_channel(1063664070034718760) #bot test channel ID
         await channel.send(match_info) 
   
