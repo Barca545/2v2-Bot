@@ -1,31 +1,29 @@
 import gspread
 import random
 import discord #I believe I am using the pycord library
+from discord.ext import commands, tasks
+from discord.commands import Option 
 import os 
 from time import sleep 
 import dotenv 
-from discord.ext import commands, tasks
-from discord.commands import Option 
 dotenv.load_dotenv()
 
 #Discord Token
-token = os.getenv("TOKEN")
+token = str(os.getenv("DISC_TOKEN"))
+intents = discord.Intents.all()
+bot = commands.Bot(command_prefix='/', intents=intents)
 
 #Google API Credentials
 gc = gspread.service_account(filename=r"C:\Users\jamar\Documents\Hobbies\Coding\2v2 Bot\v2-bot-374602-e64743327d13.json")
+#gc = gspread.service_account('/home/jamari/2v2bot/v2-bot-374602-e64743327d13,json') #Deployment JSON
 
-botlane_database = gc.open_by_url('https://docs.google.com/spreadsheets/d/134T4caUqFHG3crrS_Rk9Z3ON5o6mc19tPt4kTm4R834')
+botlane_database = gc.open_by_url('https://docs.google.com/spreadsheets/d/134T4caUqFHG3crrS_Rk9Z3ON5o6mc19tPt4kTm4R834') #Testing JSON 
 Botlaners = botlane_database.get_worksheet_by_id(0)
 Supports = botlane_database.get_worksheet_by_id(1953196714)
 
 #Supp_Champs = ['Alistar', 'Amumu','Ashe', 'Blitzcrank','Braum','Heimerdinger','Janna','Leona','Lulu','Lux','Morgana','Nami','Nautilus','Pyke','Rakan','Renata Glasc','Seraphine','Sona','Soraka','Swain','Tham Kench','Taric','Thresh','Zilean','Zyra',]
 #ADC_Champs = ['Aphelios','Ashe','Caitlyn','Draven','Ezreal','Graves','Jhin','Jinx',"Kai'sa",'Kalista','Kindred',"Kog'ma",'Lucian','Miss Fortune','Samira','Senna','Quinn','Sivir','Tristana','Twitch','Varus','Vayne','Xayah','Zeri','Yasuo']
 #full list of support champs #Supp_Champs = ['Alistar', 'Amumu', 'Ashe', 'Bard', 'Blitzcrank', 'Brand','Braum','Heimerdinger','Ivern','Janna','Karma', 'Leona','Lulu','Lux','Malphite','Maokai','Morgana','Nami','Nautilus','Pantheon','Pyke','Rakan','Renata Glasc','Senna','Seraphine','Sona','Soraka','Swain','Tham Kench','Taric','Thresh',"Vel'Koz",'Xerath','Yuumi','Zac','Zilean','Zyra',]
-
-
-#discord credentials and setup
-intents = discord.Intents.all()
-bot = commands.Bot(command_prefix='/', intents=intents)    
 
 #Building the Player class
 class Player:
@@ -42,10 +40,10 @@ dummy_supp_2 = Player('Test2#303030','Test 3', 3000, 'Soraka')
 dummy_adc_1 = Player('Test3#303030','Test 3', 4500, 'MF')
 
 #Creating ADC_queue & support_queue list 
-#Test_ADC_queue = {'Test3#303030': dummy_adc_1} #Remove dummy players
-#Test_Support_queue = {'Test1#303030': dummy_supp_1,'Test2#303030': dummy_supp_2} #Remove dummy players
-ADC_queue = {} 
-Support_queue = {}
+ADC_queue = {'Test3#303030': dummy_adc_1} #Remove dummy players
+Support_queue = {'Test1#303030': dummy_supp_1,'Test2#303030': dummy_supp_2} #Remove dummy players
+#ADC_queue = {} 
+#Support_queue = {}
  
 rank_as_mmr = {
     'Iron 2' : 300,
@@ -74,63 +72,63 @@ rank_as_mmr = {
     'Grandmaster' : 3000,
     'Challenger' : 3500,
     }
-
+roles = ['ADC','Support']
 #discord set up
 @bot.event
 async def on_ready():
     print('We have logged in as {0.user}'.format(bot))
     pop_queue.start()
 
+@bot.slash_command()
+async def set_channel(ctx, channel_id):
+    global channel_name 
+    channel_name = int(channel_id)
+    await ctx.respond('Bot channel is now ' + str(channel_name))
+
 #/setup
 @bot.slash_command()
-async def setup(ctx, ign, rank: Option(choices=rank_as_mmr),role: Option(choices=['ADC','Support']),champ_1, champ_2, champ_3):             
+async def setup(ctx, ign, rank: Option(choices=rank_as_mmr),role: Option(choices=roles), opgg_link, champ_1, champ_2, champ_3):             
     user = '{}'.format(ctx.author)
     if role == 'ADC':
-        Botlaners.append_row([user, ign, rank_as_mmr[rank], champ_1, champ_2, champ_3])
+        Botlaners.append_row([user, ign, rank_as_mmr[rank], opgg_link, champ_1, champ_2, champ_3])
     #should this be an elif?
     if role == 'Support':                               
-        Supports.append_row([user, ign, rank_as_mmr[rank], champ_1, champ_2, champ_3])
+        Supports.append_row([user, ign, rank_as_mmr[rank], opgg_link, champ_1, champ_2, champ_3])
     await ctx.respond(f'Setup complete GLHF {ign}!!!')
 
-#/joinadc
 @bot.slash_command()
-async def joinadc(ctx):
-    user = str(Botlaners.find('{}'.format(ctx.author)).value)
-    disc_id = Botlaners.find(user)
-    def get_bot_champ(user): 
-        champ_pool = Botlaners.row_values(disc_id.row)[disc_id.col+2:]
-        champ_selection = str(random.choice(champ_pool))
-        return champ_selection
-    player = Player(user,ign = Botlaners.row_values(disc_id.row)[disc_id.col],rank = Botlaners.row_values(disc_id.row)[disc_id.col+1],champ = str(get_bot_champ(user)))
-    ADC_queue[player.disc_id] = player
-    await ctx.respond(user + ' has joined the ADC queue')
+async def joinqueue(ctx, role: Option(choices=roles)):
+    if role == 'ADC':
+        user = str(Botlaners.find('{}'.format(ctx.author)).value)
+        disc_id = Botlaners.find(user)
+        def get_bot_champ(user): 
+            champ_pool = Botlaners.row_values(disc_id.row)[disc_id.col+2:]
+            champ_selection = str(random.choice(champ_pool))
+            return champ_selection
+        player = Player(user,ign = Botlaners.row_values(disc_id.row)[disc_id.col],rank = Botlaners.row_values(disc_id.row)[disc_id.col+1],champ = str(get_bot_champ(user)))
+        ADC_queue[player.disc_id] = player
+        await ctx.respond(user + ' has joined the ADC queue')
+    elif role == 'Support':
+        user = str(Supports.find('{}'.format(ctx.author)).value)
+        disc_id = Supports.find(user)
+        def get_supp_champ(user): 
+            champ_pool = Supports.row_values(disc_id.row)[disc_id.col+2:]
+            champ_selection = random.choice(champ_pool)
+            return(champ_selection) 
+        player = Player(user,ign = Supports.row_values(disc_id.row)[disc_id.col],rank = Supports.row_values(disc_id.row)[disc_id.col+1],champ = str(get_supp_champ(user)))
+        Support_queue[player.disc_id] = player
+        await ctx.respond(user + ' has joined the Support queue')
 
-#/joinsupport 
 @bot.slash_command()
-async def joinsupp(ctx): 
-    user = str(Supports.find('{}'.format(ctx.author)).value)
-    disc_id = Supports.find(user)
-    def get_supp_champ(user): 
-        champ_pool = Supports.row_values(disc_id.row)[disc_id.col+2:]
-        champ_selection = random.choice(champ_pool)
-        return(champ_selection) 
-    player = Player(user,ign = Supports.row_values(disc_id.row)[disc_id.col],rank = Supports.row_values(disc_id.row)[disc_id.col+1],champ = str(get_supp_champ(user)))
-    Support_queue[player.disc_id] = player
-    await ctx.respond(user + ' has joined the Support queue')
-
-#/leaveadc
-@bot.slash_command()
-async def leaveadc(ctx):
-    user = '{}'.format(ctx.author)
-    del ADC_queue[user] 
-    await ctx.respond(user + ' has left the ADC queue' )
-
-#leavesupport
-@bot.slash_command()
-async def leavesupport(ctx):
-    user = '{}'.format(ctx.author)
-    del Support_queue[user] 
-    await ctx.respond(user + ' has left the Support queue' )
+async def leavequeue(ctx,role: Option(choices=roles)):
+    if role == 'ADC':
+        user = '{}'.format(ctx.author)
+        del ADC_queue[user] 
+        await ctx.respond(user + ' has left the ADC queue')
+    elif role == 'Support':
+        user = '{}'.format(ctx.author)
+        del Support_queue[user] 
+        await ctx.respond(user + ' has left the Support queue')    
 
 #/showqueues
 @bot.slash_command()
@@ -164,7 +162,7 @@ async def pop_queue():
                         red_pair_rank = int(Red_adc.rank)+int(Red_support.rank) 
                         def mmr_tolerance(mmr_band):    
                             while (2000 > mmr_band):
-                                sleep(30) #Should this be in the higher 'while" loop?   
+                                sleep(30) # Make 30 in final deploy: Should this be in the higher 'while" loop?   
                                 mmr_band += 100     
                                 if blue_pair_rank - red_pair_rank == mmr_band:
                                     return(Red_adc, Red_support, red_pair_rank) 
@@ -189,6 +187,7 @@ async def pop_queue():
         'Blue Side Support: ' + str(blue_support.ign) + ' playing ' + str(blue_support.champ) + ' ' + str(blue_support.rank) +'\n'+
         'Red Side Support: ' + str(red_support.ign) + ' playing ' + str(red_support.champ) + ' ' + str(red_support.rank) +'\n'+
         'Elo Difference: ' + str(abs(blue_pair_rank - red_pair_rank)))
-        channel = bot.get_channel(1063664070034718760) #bot test channel ID make it so it automatically searhes for this 
-        await channel.send(match_info) 
+        #channel = bot.get_channel(channel_name) #1063664070034718760) 
+        await bot.get_channel(channel_name).send(match_info) 
+
 bot.run(token)                                                                                                                                           
