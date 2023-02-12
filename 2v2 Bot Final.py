@@ -27,17 +27,19 @@ Supports = botlane_database.get_worksheet_by_id(1953196714)
 
 #Building the Player class
 class Player:
-    def __init__ (self, disc_id, ign, rank, champ):
+    def __init__ (self, disc_name, disc_id, ign, rank, champ):
+        self.disc_name = disc_name
         self.disc_id = disc_id
         self.ign = ign
         self.rank = rank 
         self.champ = champ
+
     #def __repr__(self) -> str:#supposed to make the object print as a string when I print it but is not working for some reason.
     #    pass
 #Dummy players for test 
-dummy_supp_1 = Player('Test1#303030','Test 1', 1000, 'Lulu')
-dummy_supp_2 = Player('Test2#303030','Test 3', 3000, 'Soraka')
-dummy_adc_1 = Player('Test3#303030','Test 3', 4500, 'MF')
+dummy_supp_1 = Player('Test1#303030', 221397446066962435, 'Test 1', 1000, 'Lulu',  )
+dummy_supp_2 = Player('Test2#303030',221397446066962435,'Test 3', 3000, 'Soraka')
+dummy_adc_1 = Player('Test3#303030',221397446066962435, 'Test 3', 4500, 'MF')
 
 #Creating ADC_queue & support_queue list 
 ADC_queue = {'Test3#303030': dummy_adc_1} #Remove dummy players
@@ -88,35 +90,42 @@ async def set_channel(ctx, channel_id):
 #/setup
 @bot.slash_command()
 async def setup(ctx, ign, rank: Option(choices=rank_as_mmr),role: Option(choices=roles), opgg_link, champ_1, champ_2, champ_3):             
-    user = '{}'.format(ctx.author)
+    user = ctx.author
+    id = user.id
     if role == 'ADC':
-        Botlaners.append_row([user, ign, rank_as_mmr[rank], opgg_link, champ_1, champ_2, champ_3])
+        Botlaners.append_row([str(user), ign, rank_as_mmr[rank], opgg_link, champ_1, champ_2, champ_3,id])
     #should this be an elif?
     if role == 'Support':                               
-        Supports.append_row([user, ign, rank_as_mmr[rank], opgg_link, champ_1, champ_2, champ_3])
+        Supports.append_row([str(user), ign, rank_as_mmr[rank], opgg_link, champ_1, champ_2, champ_3,id])
     await ctx.respond(f'Setup complete GLHF {ign}!!!')
 
 @bot.slash_command()
 async def joinqueue(ctx, role: Option(choices=roles)):
     if role == 'ADC':
         user = str(Botlaners.find('{}'.format(ctx.author)).value)
-        disc_id = Botlaners.find(user)
+        disc_name = Botlaners.find(user)
         def get_bot_champ(user): 
-            champ_pool = Botlaners.row_values(disc_id.row)[disc_id.col+2:]
+            disc_id = Botlaners.row_values(disc_name.row)[disc_name.col+2]
+            champ_pool = Botlaners.row_values(disc_name.row)[disc_name.col+5:]
             champ_selection = str(random.choice(champ_pool))
-            return champ_selection
-        player = Player(user,ign = Botlaners.row_values(disc_id.row)[disc_id.col],rank = Botlaners.row_values(disc_id.row)[disc_id.col+1],champ = str(get_bot_champ(user)))
-        ADC_queue[player.disc_id] = player
+            return (champ_selection, disc_id)
+        disc_id = int(get_bot_champ(user)[1])
+        champ_selection = str(get_bot_champ(user)[0])
+        player = Player(disc_name = user, ign = Botlaners.row_values(disc_name.row)[disc_name.col+1], disc_id = disc_id, rank = Botlaners.row_values(disc_name.row)[disc_name.col+2], champ = champ_selection)
+        ADC_queue[player.disc_name] = player
         await ctx.respond(user + ' has joined the ADC queue')
     elif role == 'Support':
         user = str(Supports.find('{}'.format(ctx.author)).value)
-        disc_id = Supports.find(user)
+        disc_name = Supports.find(user)
         def get_supp_champ(user): 
-            champ_pool = Supports.row_values(disc_id.row)[disc_id.col+2:]
+            disc_id = Supports.row_values(disc_name.row)[disc_name.col+2]
+            champ_pool = Supports.row_values(disc_name.row)[disc_name.col+5:]
             champ_selection = random.choice(champ_pool)
-            return(champ_selection) 
-        player = Player(user,ign = Supports.row_values(disc_id.row)[disc_id.col],rank = Supports.row_values(disc_id.row)[disc_id.col+1],champ = str(get_supp_champ(user)))
-        Support_queue[player.disc_id] = player
+            return(champ_selection, disc_id) 
+        disc_id = int(get_supp_champ(user)[1])
+        champ_selection = str(get_supp_champ(user)[0])
+        player = Player(disc_name = user, ign = Supports.row_values(disc_name.row)[disc_name.col+1], disc_id = disc_id, rank = Supports.row_values(disc_name.row)[disc_name.col+2],champ = champ_selection)
+        Support_queue[player.disc_name] = player
         await ctx.respond(user + ' has joined the Support queue')
 
 @bot.slash_command()
@@ -138,13 +147,13 @@ async def showqueues(ctx):
         + '\n'  +
         str(len(Support_queue)) + ' in the Support queue')
     
-@tasks.loop(seconds=300) #make 300 in final deploy
+@tasks.loop(seconds=0) #make 300 in final deploy
 async def pop_queue(): 
     def choose_blue():
             blue_ADC = random.choice(list(ADC_queue.values()))
             blue_support = random.choice(list(Support_queue.values()))
-            del ADC_queue[blue_ADC.disc_id] 
-            del Support_queue[blue_support.disc_id] 
+            del ADC_queue[blue_ADC.disc_name] 
+            del Support_queue[blue_support.disc_name] 
             blue_pair_rank = int(blue_ADC.rank) + int(blue_support.rank)
             return (blue_ADC, blue_support, blue_pair_rank)
     if len(ADC_queue)>=2 and len(Support_queue)>=2: 
@@ -162,9 +171,9 @@ async def pop_queue():
                         red_pair_rank = int(Red_adc.rank)+int(Red_support.rank) 
                         def mmr_tolerance(mmr_band):    
                             while (2000 > mmr_band):
-                                sleep(30) # Make 30 in final deploy: Should this be in the higher 'while" loop?   
+                                sleep(0) # Make 30 in final deploy: Should this be in the higher 'while" loop?   
                                 mmr_band += 100     
-                                if blue_pair_rank - red_pair_rank == mmr_band:
+                                if blue_pair_rank - red_pair_rank <= mmr_band:
                                     return(Red_adc, Red_support, red_pair_rank) 
                                 elif mmr_band == 2000: 
                                     return(Red_adc, Red_support, red_pair_rank) 
@@ -174,7 +183,9 @@ async def pop_queue():
         red_ADC = red_pair[0]
         red_support = red_pair[1]
         red_pair_rank = red_pair[2]    
-        Players = [blue_ADC, red_ADC, blue_support, red_support] 
+        Players = [blue_ADC, red_ADC, blue_support, red_support]
+        for player in Players: 
+            user = bot.get_user(player.disc_id)
         lobby_creator = random.choice(Players).ign
         lobby_name = lobby_creator +"'s Lobby" + ' ' + str(random.randint(0,105))
         password = 'RSS' + str(random.randint(0,10043)) 
@@ -188,6 +199,7 @@ async def pop_queue():
         'Red Side Support: ' + str(red_support.ign) + ' playing ' + str(red_support.champ) + ' ' + str(red_support.rank) +'\n'+
         'Elo Difference: ' + str(abs(blue_pair_rank - red_pair_rank)))
         #channel = bot.get_channel(channel_name) #1063664070034718760) 
-        await bot.get_channel(channel_name).send(match_info) 
+        #await bot.get_channel(channel_name).send(match_info) #This needs to be set every time the bot turns on, surely there is a way to save this.
+        await user.send(match_info) 
 
 bot.run(token)                                                                                                                                           
