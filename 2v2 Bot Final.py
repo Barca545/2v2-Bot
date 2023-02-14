@@ -6,6 +6,7 @@ from discord.commands import Option
 import os 
 from time import sleep 
 import dotenv 
+import re
 dotenv.load_dotenv()
 
 #Discord Token
@@ -17,11 +18,11 @@ bot = commands.Bot(command_prefix='/', intents=intents)
 gc = gspread.service_account(filename=r"C:\Users\jamar\Documents\Hobbies\Coding\2v2 Bot\v2-bot-374602-e64743327d13.json")
 #gc = gspread.service_account('/home/jamari/2v2bot/v2-bot-374602-e64743327d13,json') #Deployment JSON
 
-botlane_database = gc.open_by_url('https://docs.google.com/spreadsheets/d/134T4caUqFHG3crrS_Rk9Z3ON5o6mc19tPt4kTm4R834') #Testing JSON 
-Botlaners = botlane_database.get_worksheet_by_id(0)
-Supports = botlane_database.get_worksheet_by_id(1953196714)
-Tops = botlane_database.get_worksheet_by_id(839126568)
-Mids = botlane_database.get_worksheet_by_id(431869411)
+bot_database = gc.open_by_url('https://docs.google.com/spreadsheets/d/134T4caUqFHG3crrS_Rk9Z3ON5o6mc19tPt4kTm4R834') #Testing JSON 
+Botlaners = bot_database.get_worksheet_by_id(0)
+Supports = bot_database.get_worksheet_by_id(1953196714)
+Tops = bot_database.get_worksheet_by_id(839126568)
+Mids = bot_database.get_worksheet_by_id(431869411)
 
 #Supp_Champs = ['Alistar', 'Amumu','Ashe', 'Blitzcrank','Braum','Heimerdinger','Janna','Leona','Lulu','Lux','Morgana','Nami','Nautilus','Pyke','Rakan','Renata Glasc','Seraphine','Sona','Soraka','Swain','Tham Kench','Taric','Thresh','Zilean','Zyra',]
 #ADC_Champs = ['Aphelios','Ashe','Caitlyn','Draven','Ezreal','Graves','Jhin','Jinx',"Kai'sa",'Kalista','Kindred',"Kog'ma",'Lucian','Miss Fortune','Samira','Senna','Quinn','Sivir','Tristana','Twitch','Varus','Vayne','Xayah','Zeri','Yasuo']
@@ -46,10 +47,17 @@ dummy_adc_1 = Player('Test3#303030',221397446066962435, 'Test 3', 4500, 'MF')
 #Creating ADC_queue & support_queue list 
 ADC_queue = {'Test3#303030': dummy_adc_1} #Remove dummy players
 Support_queue = {'Test1#303030': dummy_supp_1,'Test2#303030': dummy_supp_2} #Remove dummy players
-Mid_queue = {}
-Top_queue = {}
+Mid_queue = {'Test1#303030': dummy_supp_1,'Test2#303030': dummy_supp_2}
+Top_queue = {'Test1#303030': dummy_supp_1,'Test2#303030': dummy_supp_2}
+Queues = {
+    'ADC_queue': ADC_queue,
+    'Support_queue': Support_queue,
+    'Mid_queue': Mid_queue,
+    'Top_queue': Top_queue
+    } 
 #ADC_queue = {} 
 #Support_queue = {}
+
  
 rank_as_mmr = {
     'Iron 2' : 300,
@@ -80,6 +88,7 @@ rank_as_mmr = {
     }
 
 roles = ['ADC','Support','Top', 'Mid']
+
 #discord set up
 @bot.event
 async def on_ready():
@@ -98,13 +107,13 @@ async def setup(ctx, ign, rank: Option(choices=rank_as_mmr),role: Option(choices
     user = ctx.author
     id = user.id
     if role == 'ADC':
-        Botlaners.append_row([str(user), ign, rank_as_mmr[rank], opgg_link, champ_1, champ_2, champ_3,id])
+        Botlaners.append_row([str(user), ign, id, rank_as_mmr[rank], opgg_link, champ_1, champ_2, champ_3])
     elif role == 'Support':                               
-        Supports.append_row([str(user), ign, rank_as_mmr[rank], opgg_link, champ_1, champ_2, champ_3,id])
+        Supports.append_row([str(user), ign, id, rank_as_mmr[rank], opgg_link, champ_1, champ_2, champ_3])
     elif role == 'Top':
-        Tops.append_row([str(user), ign, rank_as_mmr[rank], opgg_link, champ_1, champ_2, champ_3,id])
+        Tops.append_row([str(user), ign, id, rank_as_mmr[rank], opgg_link, champ_1, champ_2, champ_3])
     elif role == 'Mid':
-        Mids.append_row.append_row([str(user), ign, rank_as_mmr[rank], opgg_link, champ_1, champ_2, champ_3,id])
+        Mids.append_row([str(user), ign, id,  rank_as_mmr[rank], opgg_link, champ_1, champ_2, champ_3])
     await ctx.respond(f'Setup complete GLHF {ign}!!!')
 
 @bot.slash_command()
@@ -259,18 +268,18 @@ async def pop_queue():
 #++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 #++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 #++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+#Updated pop_queue
 @tasks.loop(seconds=0) #make 300 in final deploy
-async def pop_queue(lane):
-    while len(Top_queue) >= 2:
-        blue_laner = random.choice(list(Top_queue.values()))
+async def pop_queue():
+    #Almost certainly should not be an elif probably needs to be some kind of asynchronous function
+    async def choose_blue(lane): #put in dict like Bazzalisk said so I can use regex then use await Type_queue >= 2:
+        blue_laner = random.choice(list(Queues[*].values()))
         del Top_queue[blue_laner.disc_name]
         return blue_laner
-    while len(Mid_queue) >= 2:
-        blue_laner = random.choice(list(Mid_queue.values()))
-        del Top_queue[blue_laner.disc_name]
-        return blue_laner
-    blue_rank = int(blue_laner.rank)
-    def choose_red(): 
+    
+    blue_laner = choose_blue() 
+    blue_rank = blue_laner.rank
+    def choose_red(blue_laner, blue_rank): #also make into a more universal function
         while blue_rank > 0: #maybe should be 'while' #gotta be a more optimal way than just saying if zero 
                 for Red_laner in Top_queue: #gotta be a more effcient way of doing these 2 lines. There is, make the player object.
                     red_laner_rank = int(Red_laner.rank)

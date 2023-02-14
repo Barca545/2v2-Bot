@@ -1,60 +1,63 @@
+import random
+from time import sleep
 class Player:
-    def __init__ (self, disc_id, ign, rank, champ):
+    def __init__ (self, disc_name, disc_id, ign, rank, champ):
+        self.disc_name = disc_name
         self.disc_id = disc_id
         self.ign = ign
         self.rank = rank 
         self.champ = champ
 
-rank_as_mmr = {
-    # 'Iron 4' : 100, 
-    # 'Iron 3' : 200, 
-    # 'Iron 2' : 300,
-    # 'Iron 1' : 400,
-    'Bronze 4' : 500,
-    'Bronze 3' : 600,
-    'Bronze 2' : 700,
-    'Bronze 1' : 800,
-    'Silver 4' : 900,
-    'Silver 3' : 1000,
-    'Silver 2' : 1100,
-    'Silver 1' : 1200,
-    'Gold 4' : 1300,
-    'Gold 3' : 1400,
-    'Gold 2' : 1500,
-    'Gold 1' : 1600,
-    'Platinum 4' : 1700,
-    'Platinum 3' : 1800,
-    'Platinum 2' : 1900,
-    'Platinum 1' : 2000,
-    'Diamond 4' : 2100,
-    'Diamond 3' : 2200,
-    'Diamond 2' : 2300,
-    'Diamond 1' : 2400,
-    'Master' : 2600,
-    'Grandmaster' : 3000,
-    'Challenger' : 3500,
-    }
-player = Player(str(Botlaners.find('{}'.format(ctx.author)).value), Botlaners.row_values(disc_id.row)[disc_id.col[2]],)
-#ADC_queue = {str(player.name) : str(player.rank), list(player.champs)} 
+dummy_supp_1 = Player('Test1#303030', 221397446066962435, 'Test 1', 1000, 'Lulu',  )
+dummy_supp_2 = Player('Test2#303030',221397446066962435,'Test 3', 3000, 'Soraka')
+dummy_adc_1 = Player('Test3#303030',221397446066962435, 'Test 3', 4500, 'MF')
 
-#Support_queue = {str(player.name) : str(player.rank), list(player.champs)} 
+ADC_queue = {'Test3#303030': dummy_adc_1} #Remove dummy players
+Sup_queue = {'Test1#303030': dummy_supp_1,'Test2#303030': dummy_supp_2} #Remove dummy players
+Mid_queue = {'Test1#303030': dummy_supp_1,'Test2#303030': dummy_supp_2}
+Top_queue = {'Test1#303030': dummy_supp_1,'Test2#303030': dummy_supp_2}
 
-#blue_pair =  modify the pop_q function to # generate one random pair as a list.
+Queues = {
+    'ADC_queue': ADC_queue,
+    'Support_queue': Sup_queue,
+    'Mid_queue': Mid_queue,
+    'Top_queue': Top_queue
+    }                                            
 
-#blue_pair_rank = 
-
-def match(queue, k): 
-    for i in range(len(ADC_queue)): 
-        for j in range(len(Support_queue)): 
-            if ADC_queue[i] + Support_queue[j] >= k-50 or =< k+50:
-                return list(i, j)
+def choose_players(lane:str,mmr_band):
+    players = []
+    lane_queue = Queues[lane +'_queue']        
+    def mmr_check(blue_laner,red_laner, mmr_band): #returning none for some reason
+        delta_mmr = abs(blue_laner.rank - red_laner.rank)
+        if  delta_mmr <= mmr_band: #1000-3000 =/= 2000 this is false so 
+            return True 
+        elif mmr_band == 2000: 
+            return True 
+        elif mmr_band !=2000 and delta_mmr >= mmr_band:
+            red_laner_2 = random.choice(list(lane_queue.values()))
+            new_delta = abs(blue_laner.rank - red_laner_2.rank)
+            if delta_mmr > new_delta:
+                return red_laner_2
             else:
-                return False
+                return red_laner    
+    blue_laner = random.choice(list(lane_queue.values()))
+    players.append(blue_laner)
+    del lane_queue[blue_laner.disc_name]                       
+    while (len(lane_queue)) == 1: #the while is messed up
+        red_laner = random.choice(list(lane_queue.values()))           
+        sleep(0) #change duration after testing
+        mmr_band += 100           
+        checked_mmr = mmr_check(blue_laner,red_laner,100)
+        if checked_mmr == True:
+            print('red laner is still' + red_laner.disc_name)
+            players.append(red_laner)
+            del lane_queue[red_laner.disc_name]  
+            return red_laner    
+        elif checked_mmr == Player:
+            print('looped thru elif')
+            red_player = checked_mmr
+            return red_player                
+    print('blue=' + blue_laner.disc_name, 'red =' +red_laner.disc_name )
+#~~~~~~~~~~~~~~~~~~~~~~~~~up to here works ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~                               
+choose_players('Top',100)
 
-# need to figure out how to pull rank from i,j 
-# need to make match a loop and add # functionality to match so that the +/- k gets
-# bigger each loop. probably bigger by 100.
-
-red_pair = match()
-
-# then code to print the match like in the OG pop_q
