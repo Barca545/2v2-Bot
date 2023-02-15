@@ -1,10 +1,37 @@
 import random
-import discord 
+import discord
+from discord.ext import commands, tasks
+from discord.commands import Option  
 import warnings
 import asyncio
 import secrets
 import string
+import os
 warnings.filterwarnings("ignore", category=RuntimeWarning) 
+
+#Discord Setup
+token = str(os.getenv("DISC_TOKEN"))
+intents = discord.Intents.all()
+bot = commands.Bot(command_prefix='/', intents=intents)
+
+#Could these be inside another class as a method maybe include pwd too?
+def delta_mmr(laner_1, laner_2): 
+    return abs(laner_1.rank - laner_2.rank)
+
+async def send(recipients,msg,DM:bool,channel:bool,channel_name:int):     
+        for j in recipients : 
+            user_id = bot.get_user(recipients.disc_id)
+        if DM == True:    
+            await user_id.send(msg)
+        if channel == True:       
+            channel = bot.get_channel(channel_name) #1063664070034718760 is the test channel id 
+            await channel.send(msg)  
+
+def password():
+        pwd = ''
+        for i in range(13):
+            pwd += ''.join(secrets.choice(string.ascii_letters + string.digits))
+        print(' '.join('Password:',pwd))
 
 class Player:
     def __init__ (self, disc_name, disc_id, ign, rank, champ):
@@ -14,40 +41,16 @@ class Player:
         self.rank = rank 
         self.champ = champ
 
-class Match:    
-    class queue:
-        def __init__(self,Top,Mid,Bot,Sup):
-            self.top = Top
-            self.mid = Mid
-            self.bot = Bot
-            self.sup = Sup    
-            class solo_lane:
-                def __init__ (self,blue_side,red_side):
-                    self.blue_side = blue_side
-                    self.red_side = red_side
-            
-            class duo_lane:
-                def __init__ (self,blue_adc,red_adc,blue_sup,red_sup):
-                    self.blue_adc = blue_adc
-                    self.red_adc = red_adc
-                    self.blue_sup = blue_sup
-                    self.red_sup = red_sup
-    pass       
-    def __init__ (self, lane,lobby_owner,elo_diff):
+class Match:           
+    def __init__ (self,lane:str,role:str,players:dict): #I don't think these args work
+        self = self
         self.lane = lane
-        self.lobby_owner = lobby_owner
-        self.elo_diff = elo_diff
-    #These can't all be prints they need be sends or something in the final
-    def owner(players,lane):
-        lobby_creator = (random.choice(players[lane +'_players'])).disc_name
-        print(''.join('Lobby Creator: ',lobby_creator,'\n','Lobby Name: ',lobby_creator,"'s Lobby'"))
-    def diff(mmr_delta):
-        print(' '.join('Elo Difference:',str(mmr_delta)))
-    def password():
-        pwd = ''
-        for i in range(13):
-            pwd += ''.join(secrets.choice(string.ascii_letters + string.digits))
-        print(' '.join('Password:',pwd))
+        self.role = role
+        self.players = players
+        self.creator = (random.choice(players[lane][' '.join('Blue',role)])).disc_name
+        self.pwd = password() #can I do this reference a class' method inside the class?
+        self.diff = delta_mmr(players[0],players[1])
+
     def lane_role(lane,role): #Does this need to be a function or can it just be if/then
         if lane == 'Bot':
             lane_role = Queues[lane][role]
@@ -55,9 +58,7 @@ class Match:
         else:
             lane_role = Queues[lane]
             return lane_role 
-    def choose_2nd(blue_laner,red_laner,lane_queue,mmr_band,cutoff=2000): 
-        def delta_mmr(laner_1, laner_2):
-                return abs(laner_1.rank - laner_2.rank)
+    def choose_2nd(blue_laner,red_laner,lane_queue,mmr_band,cutoff=2000):       
         if  delta_mmr(blue_laner,red_laner) <= mmr_band: 
             return red_laner 
         elif delta_mmr(blue_laner,red_laner) > mmr_band and len(lane_queue) > 0: #maybe could solve the issue with deleteing red player by doing it here instead
@@ -82,7 +83,14 @@ class Match:
                 return True
             else: 
                 return False
-
+    def info():
+        creator_msg = ''.join('Lobby Creator: ', Match.creator) 
+        name_msg = ''.join('Lobby Name: ', creator_msg,"'s Lobby")
+        type_msg = ''.join('Lobby Type: ', Match.lane)
+        pwd_msg =  ''.join(Match.pwd)
+        diff_msg = ' '.join('Elo Difference:',str(Match.diff))    
+        return '\n'.join(creator_msg,name_msg,type_msg,pwd_msg,diff_msg)        
+        
 dummy_supp_1 = Player('Test1#303030', 221397446066962435, 'Test 1', 1000, 'Lulu',  )
 dummy_supp_2 = Player('Test2#303030',221397446066962435,'Test 3', 3000, 'Soraka')
 dummy_adc_1 = Player('Test3#303030',221397446066962435, 'Test 3', 4500, 'MF')
@@ -119,22 +127,13 @@ async def choose_players(lane:str,role:str,mmr_band):
             mmr_band += 100 #Is this the same variable as the one at the start of the loop?
             return mmr_band #Will returning here cause the loop to terminate? I just want it to run again but with mmr_band larger by 100
 
-   
-    #channel = bot.get_channel(channel_name) #1063664070034718760) 
-    #for player in player: 
-    #    user = bot.get_user(player.disc_id)
-    #await channel.send(match_info) 
-    #await user.send(match_info)
-    #delete in final version
-#~~~~~~~~~~~~~~~~~~~~~~~~~up to here works ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~                               
-
-
 if len(Top_queue)>=2:
     Top_players = asyncio.run(choose_players('Top',100))
-    Mid_match_msg = asyncio.run(solo_match_notification(Top_players))
+    Top_match_msg = asyncio.run(send(Top_players))
+    new_match = Match #fill in the match class
 if len(Mid_queue)>=2:
     Mid_players = asyncio.run(choose_players('Mid',100))
-    Mid_match_msg = asyncio.run(solo_match_notification(Mid_players))
+    Mid_match_msg = asyncio.run(send(Mid_players))
 if len(ADC_queue) > 2 and len(Sup_queue) > 2:
     ADC_players = asyncio.run(choose_players('ADC',100))
     Sup_players = asyncio.run(choose_players('Sup',100))
