@@ -6,15 +6,6 @@ import secrets
 import string
 warnings.filterwarnings("ignore", category=RuntimeWarning) 
 
-def make_pwd():
-    alphabet = string.digits + string.ascii_letters
-    pwd_length = 13
-    pwd = ''
-    for i in range(pwd_length):
-        pwd += ''.join(secrets.choice(alphabet))
-    print(pwd)
-
-
 class Player:
     def __init__ (self, disc_name, disc_id, ign, rank, champ):
         self.disc_name = disc_name
@@ -23,30 +14,74 @@ class Player:
         self.rank = rank 
         self.champ = champ
 
-class Match_info:
-    def __init__ (self, lobby_type, players:dict, ):
-        self.lobby_type = lobby_type
-        self.lobby_name = 
-        self.blue_1 = players
-        self.blue_2 = blue_2
-        self.red_1 = red_1
-        self.red_2 = red_2
-    def lobby_name():
-        print('Lobby Name: '+ self.lobby_creator + "'s Lobby" )
-    def lobby_creator(players):
-        lobby_creator = (random.choice(players)).disc_name
-        print(lobby_creator)
-    def elo_diff(mmr_delta):
-        elo_diff = mmr_delta
-        print(elo_diff)
+class Match:    
+    class queue:
+        def __init__(self,Top,Mid,Bot,Sup):
+            self.top = Top
+            self.mid = Mid
+            self.bot = Bot
+            self.sup = Sup    
+            class solo_lane:
+                def __init__ (self,blue_side,red_side):
+                    self.blue_side = blue_side
+                    self.red_side = red_side
+            
+            class duo_lane:
+                def __init__ (self,blue_adc,red_adc,blue_sup,red_sup):
+                    self.blue_adc = blue_adc
+                    self.red_adc = red_adc
+                    self.blue_sup = blue_sup
+                    self.red_sup = red_sup
+    pass       
+    def __init__ (self, lane,lobby_owner,elo_diff):
+        self.lane = lane
+        self.lobby_owner = lobby_owner
+        self.elo_diff = elo_diff
+    #These can't all be prints they need be sends or something in the final
+    def owner(players,lane):
+        lobby_creator = (random.choice(players[lane +'_players'])).disc_name
+        print(''.join('Lobby Creator: ',lobby_creator,'\n','Lobby Name: ',lobby_creator,"'s Lobby'"))
+    def diff(mmr_delta):
+        print(' '.join('Elo Difference:',str(mmr_delta)))
     def password():
-        print('RSS' + make_pwd)
-    
-
-    
-    'Elo Difference: ' + str())
-
-
+        pwd = ''
+        for i in range(13):
+            pwd += ''.join(secrets.choice(string.ascii_letters + string.digits))
+        print(' '.join('Password:',pwd))
+    def lane_role(lane,role): #Does this need to be a function or can it just be if/then
+        if lane == 'Bot':
+            lane_role = Queues[lane][role]
+            return lane_role 
+        else:
+            lane_role = Queues[lane]
+            return lane_role 
+    def choose_2nd(blue_laner,red_laner,lane_queue,mmr_band,cutoff=2000): 
+        def delta_mmr(laner_1, laner_2):
+                return abs(laner_1.rank - laner_2.rank)
+        if  delta_mmr(blue_laner,red_laner) <= mmr_band: 
+            return red_laner 
+        elif delta_mmr(blue_laner,red_laner) > mmr_band and len(lane_queue) > 0: #maybe could solve the issue with deleteing red player by doing it here instead
+            for i in lane_queue:    
+               test_lane_queue = lane_queue
+               red_laner_test = test_lane_queue[i].pop
+               laner_3 = [red_laner]
+               if delta_mmr(blue_laner,laner_3) > delta_mmr(blue_laner,red_laner_test):              
+                    del laner_3[0]
+                    laner_3.append(red_laner_test) #is the red_laner_test value returned static?
+            return laner_3
+        elif mmr_band == cutoff: #not sure I still need this.
+            return True
+    def laner_check(laner, new_laner,check_true:bool): #Should this be a sub method or something, is that even a thing?
+        if check_true == False:
+            if laner == new_laner:
+                return laner
+            else: 
+                return new_laner
+        if check_true == True:
+            if laner == new_laner:
+                return True
+            else: 
+                return False
 
 dummy_supp_1 = Player('Test1#303030', 221397446066962435, 'Test 1', 1000, 'Lulu',  )
 dummy_supp_2 = Player('Test2#303030',221397446066962435,'Test 3', 3000, 'Soraka')
@@ -58,89 +93,41 @@ ADC_queue = {'Test3#303030': dummy_adc_1} #Remove dummy players
 Sup_queue = {'Test1#303030': dummy_supp_1,'Test2#303030': dummy_supp_2} #Remove dummy players
 
 Queues = {
-    'ADC_queue': ADC_queue,
-    'Support_queue': Sup_queue,
-    'Mid_queue': Mid_queue,
-    'Top_queue': Top_queue
-    }                                            
-#@tasks.loop(minutes=0) #make 5 in final deploy
-async def choose_players(lane:str,mmr_band):
-    players = {
-        'Top_queue': {'Blue','Red'}, 
-        'Mid_queue': {'Blue','Red'},
-        'ADC_queue': {'Blue','Red'},
-        'Sup_queue': {'Blue','Red'}
-    }
-    lane_queue = Queues[lane +'_queue']        
-    def mmr_check(blue_laner,red_laner, mmr_band): 
-        delta_mmr = abs(blue_laner.rank - red_laner.rank)
-        if  delta_mmr <= mmr_band: 
-#            print('if 1')
-            return True 
-        elif delta_mmr >= mmr_band: #maybe could solve the issue with deleteing red player by doing it here instead
-            red_laner_2 = random.choice(list(lane_queue.values()))
-            new_delta = abs(blue_laner.rank - red_laner_2.rank)
-            if delta_mmr > new_delta:
-                del lane_queue[red_laner_2.disc_name]  
-                return red_laner_2
-            else:
-                return red_laner
-        elif mmr_band == 2000: 
-#            print ('elif 1')
-            return True 
-    blue_laner = random.choice(list(lane_queue.values()))
-    players[lane +'_queue']['Blue']
-    del lane_queue[blue_laner.disc_name]                       
-    red_laner = random.choice(list(lane_queue.values()))          
-#    del lane_queue[red_laner.disc_name] # if this runs then the len(lane_queue) == 0 cant do the +1 thing in the while because it will cause the check_mmr function to run even when the list is empty
-    checked_mmr = mmr_check(blue_laner,red_laner,100)
-#    print(checked_mmr.disc_name)
-#    print('len q before while: ' + str(len(lane_queue)))
-    while len(lane_queue) >= 1 and len(players) < 2 : #condition may have to be tweeked
-#        print('loop test')
-        if checked_mmr == True:
-#           print('red laner is still' + red_laner.disc_name) #delete when finished
-            players[lane +'_queue']['Red'] = red_laner
-            #await players
-            return players
-        elif checked_mmr == Player:
-#            print('looped thru elif1') #delete when finished
-            red_laner_2 = checked_mmr
-            players[lane +'_queue']['Red'] = red_laner_2
-            #await players
-            return players
-        else:
-            await asyncio.sleep(0) #change duration after testing
-#            print('old mmr: ' + str(mmr_band)) #delete when finished
-            mmr_band += 100
-#            print('new mmr: ' + str(mmr_band))  #delete when finished  
-            checked_mmr = mmr_check(blue_laner,red_laner,mmr_band) 
-    return players 
-#players = asyncio.run(choose_players('Top',100))
-#print('Blue: ' + players[0].disc_name + ' Red: ' + players[1].disc_name)
+    'Mid': Mid_queue,
+    'Top': Top_queue,
+    'Bot': {'ADC': ADC_queue,
+            'Support': Sup_queue}}                                            
 
-async def solo_match_notification(players:list, lane):      
-    blue_player = players[0]
-    red_player = players[1]
-    mmr_delta = abs(blue_player.rank - red_player.rank)
-    lobby_creator = random.choice(players).ign
-    lobby_name = lobby_creator +"'s Lobby" + ' ' + str(random.randint(0,105))
-    
-    match_info = (  
-    'Lobby Name: '+ str(lobby_name) +'\n'+
-    'Lobby type: ' + lane +'\n'+
-    'Lobby Creator: ' + str(lobby_creator) +'\n'+ 
-    'Password: '+ str(password) +'\n'+
-    'Blue Side : ' + str(blue_player.ign) + ' playing ' + str(blue_player.champ) + ' ' + str(blue_player.rank) +'\n'+
-    'Red Side : ' + str(red_player.ign) + ' playing ' + str(red_player.champ) + ' ' + str(red_player.rank) +'\n'+
-    'Elo Difference: ' + str(mmr_delta))
+#@tasks.loop(minutes=0) #make 5min in final deploy
+async def choose_players(lane:str,role:str,mmr_band):
+    players = {} 
+    lane_queue = Match.lane_role(lane,role) 
+    blue_laner = lane_queue.pop(random.choice(list(lane_queue)))
+    players[lane][' '.join('Blue',role)] =  blue_laner #double check                  
+    red_laner = random.choice(list(lane_queue.values()))   
+    while len(lane_queue) >= 1 and len(players) <= 1: #condition may have to be tweaked because as it stands, I think it will terminate as soon as it grabs a red player from lane_queue or never even start at all
+        mmr_band = 100
+        second_player = Match.choose_2nd(blue_laner,red_laner,lane_queue,mmr_band)
+        if second_player[0] == True:
+            players[lane][' '.join('Red',role)] = red_laner
+            break
+        elif type(second_player[0]) is Player:
+            Match.laner_check(red_laner,second_player,False)
+            break
+        else:
+            await asyncio.sleep(0) #Change duration after testing. Should this be something other than asyncio.
+            mmr_band += 100 #Is this the same variable as the one at the start of the loop?
+            return mmr_band #Will returning here cause the loop to terminate? I just want it to run again but with mmr_band larger by 100
+
+   
     #channel = bot.get_channel(channel_name) #1063664070034718760) 
     #for player in player: 
     #    user = bot.get_user(player.disc_id)
     #await channel.send(match_info) 
     #await user.send(match_info)
-    print(match_info) #delete in final version
+    #delete in final version
 #~~~~~~~~~~~~~~~~~~~~~~~~~up to here works ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~                               
+
 
 if len(Top_queue)>=2:
     Top_players = asyncio.run(choose_players('Top',100))
