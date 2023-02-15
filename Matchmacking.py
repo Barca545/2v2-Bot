@@ -65,17 +65,6 @@ class Match:
             test_laner = lane_queue[i]
             if best_laner is None or delta_mmr(blue_laner,best_laner) > delta_mmr(blue_laner,test_laner):
                 best_laner = test_laner        
-    def laner_check(laner, new_laner,check_true:bool): #Do not think I need this
-        if check_true == False:
-            if laner == new_laner:
-                return laner
-            else: 
-                return new_laner
-        if check_true == True:
-            if laner == new_laner:
-                return True
-            else: 
-                return False
     def side_selection(first_player, second_player,lane,role,players_dict):
         if first_player.rank > second_player.rank:
             players_dict[lane][' '.join('Blue',role)] = second_player
@@ -89,7 +78,20 @@ class Match:
             players_dict[lane][' '.join('Blue',role)] = first_player
             players_dict[lane][' '.join('Red',role)] = second_player
             return players_dict    
-    def info():
+   def choose_players(lane:str,role:str): #Since this is an async function it needs awaitables                      
+    while True: #Condition needs to be tweaked 
+        lane_queue = Match.lane_role(lane,role) 
+        first_player = lane_queue[0]
+        mmr_band = None
+        second_player = Match.choose_2nd(first_player,lane_queue)
+        if delta_mmr(first_player,second_player) <= mmr_band or mmr_band == 2000:
+            players = {}
+            return Match.side_selection(first_player,second_player,lane=lane,role=role,players_dict=players)
+        elif mmr_band is None or delta_mmr(first_player,second_player) > mmr_band:
+            time.sleep(0) #Change duration after testing. Should this be something other than asyncio.
+            mmr_band += 100 #Is this the same variable as the one at the start of the loop?
+            return mmr_band 
+   def info():
         creator_msg = ''.join('Lobby Creator: ', Match.creator) 
         name_msg = ''.join('Lobby Name: ', creator_msg,"'s Lobby")
         type_msg = ''.join('Lobby Type: ', Match.lane)
@@ -114,27 +116,14 @@ Queues = {
             'Support': Sup_queue}}                                            
 
 #@tasks.loop(minutes=0) #make 5min in final deploy
-async def choose_players(lane:str,role:str): #Since this is an async function it needs awaitables
-    lane_queue = Match.lane_role(lane,role) 
-    first_player = lane_queue.pop(random.choice(list(lane_queue)))                      
-    while True: #Condition needs to be tweaked 
-        mmr_band = None
-        second_player = Match.choose_2nd(first_player,lane_queue)
-        if delta_mmr(first_player,second_player) <= mmr_band or mmr_band == 2000:
-            players = {}
-            return Match.side_selection(first_player,second_player,lane=lane,role=role,players_dict=players)
-        elif mmr_band is None or delta_mmr(first_player,second_player) > mmr_band:
-            time.sleep(0) #Change duration after testing. Should this be something other than asyncio.
-            mmr_band += 100 #Is this the same variable as the one at the start of the loop?
-            return mmr_band
-
 if len(Top_queue)>=2:
-    Top_players = asyncio.run(choose_players('Top','Top'))
-    New_Top_match = Match('Top','Top',Top_players)
+    Top_players = Match.choose_players('Top','Top')
+    Top_match = Match('Top','Top',Top_players)
     Top_match_msg = New_Top_match.info()
     #fill in the match class
 if len(Mid_queue)>=2:
-    Mid_players = asyncio.run(choose_players('Mid','Mid'))
+    Mid_players = Match.choose_players('Mid','Mid')
+    Mid_match = Match('Mid','Mid',Mid_players)
     Mid_match_msg = asyncio.run(send(Mid_players))
 if len(ADC_queue) > 2 and len(Sup_queue) > 2:
     ADC_players = asyncio.run(choose_players('ADC','ADC'))
