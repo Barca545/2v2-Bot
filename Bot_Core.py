@@ -1,29 +1,21 @@
-import gspread
 import random
-import discord #I believe I am using the pycord library
+import os 
+from time import sleep
+from Bot_initiate import *
+import discord
 from discord.ext import commands, tasks
 from discord.commands import Option 
-import os 
-from time import sleep 
 import dotenv 
-#import Matchmacking
-
 dotenv.load_dotenv()
+from Matchmaking import *
+from Matchmaking import Player
 
-#Discord Setup
+#Discord Bot Initiation
 token = str(os.getenv("DISC_TOKEN"))
 intents = discord.Intents.all()
-bot = commands.Bot(command_prefix='/', intents=intents)
+bot = commands.Bot(command_prefix='/', intents=intents) 
 
-#Google API Credentials
-gc = gspread.service_account(filename=r"C:\Users\jamar\Documents\Hobbies\Coding\2v2 Bot\v2-bot-374602-e64743327d13.json")
-#gc = gspread.service_account('/home/jamari/2v2bot/v2-bot-374602-e64743327d13,json') #Deployment JSON
-
-bot_database = gc.open_by_url('https://docs.google.com/spreadsheets/d/134T4caUqFHG3crrS_Rk9Z3ON5o6mc19tPt4kTm4R834') #Testing JSON 
-Botlaners = bot_database.get_worksheet_by_id(0)
-Supports = bot_database.get_worksheet_by_id(1953196714)
-Tops = bot_database.get_worksheet_by_id(839126568)
-Mids = bot_database.get_worksheet_by_id(431869411)
+#import Matchmacking
 
 #Supp_Champs = ['Alistar', 'Amumu','Ashe', 'Blitzcrank','Braum','Heimerdinger','Janna','Leona','Lulu','Lux','Morgana','Nami','Nautilus','Pyke','Rakan','Renata Glasc','Seraphine','Sona','Soraka','Swain','Tham Kench','Taric','Thresh','Zilean','Zyra',]
 #ADC_Champs = ['Aphelios','Ashe','Caitlyn','Draven','Ezreal','Graves','Jhin','Jinx',"Kai'sa",'Kalista','Kindred',"Kog'ma",'Lucian','Miss Fortune','Samira','Senna','Quinn','Sivir','Tristana','Twitch','Varus','Vayne','Xayah','Zeri','Yasuo']
@@ -210,136 +202,12 @@ async def showmidqueue(ctx):
         str(len(Mid_queue)) + ' in the Mid queue')
 
 #Pop queue    
-@tasks.loop(seconds=300) #make 300 in final deploy
-async def pop_queue(): 
-    def choose_blue():
-            blue_ADC = random.choice(list(ADC_queue.values()))
-            blue_support = random.choice(list(Sup_queue.values()))
-            del ADC_queue[blue_ADC.disc_name] 
-            del Sup_queue[blue_support.disc_name] 
-            blue_pair_rank = int(blue_ADC.rank) + int(blue_support.rank)
-            return (blue_ADC, blue_support, blue_pair_rank)
-    if len(ADC_queue)>=2 and len(Sup_queue)>=2: 
-        blue_pair = choose_blue()
-        blue_ADC = blue_pair[0]
-        blue_support = blue_pair[1]
-        blue_pair_rank = blue_pair[2]
-        if blue_pair_rank > 0: #maybe should be 'while'
-            def choose_red():
-                #the actual method it uses to choose the Red side (the for loop) is witchcraft to me and I am not sure it is actually doing what I want but it seems to work?                 
-                for Red_adc_name in ADC_queue: 
-                    Red_adc = ADC_queue[Red_adc_name] #gotta be a more effcient way of doing these 2 lines
-                    for Red_support_name in Sup_queue: 
-                        Red_support = Sup_queue[Red_support_name] #gotta be a more effcient way of doing these 2 lines
-                        red_pair_rank = int(Red_adc.rank)+int(Red_support.rank) 
-                        def mmr_tolerance(mmr_band):    
-                            while (2000 > mmr_band):
-                                sleep(30) # Make 30 in final deploy: Should this be in the higher 'while" loop?   
-                                mmr_band += 100     
-                                if blue_pair_rank - red_pair_rank <= mmr_band:
-                                    return(Red_adc, Red_support, red_pair_rank) 
-                                elif mmr_band == 2000: 
-                                    return(Red_adc, Red_support, red_pair_rank) 
-                return mmr_tolerance(100)                                             
-            choose_red()
-        red_pair = choose_red() 
-        red_ADC = red_pair[0]
-        red_support = red_pair[1]
-        red_pair_rank = red_pair[2]    
-        Players = [blue_ADC, red_ADC, blue_support, red_support]
-        for player in Players: 
-            user = bot.get_user(player.disc_id)
-        lobby_creator = random.choice(Players).ign
-        lobby_name = lobby_creator +"'s Lobby" + ' ' + str(random.randint(0,105))
-        password = 'RSS' + str(random.randint(0,10043)) 
-        match_info = (  
-        'Lobby Creator: ' + str(lobby_creator) +'\n'+ 
-        'Lobby Name: '+ str(lobby_name) +'\n'+
-        'Password: '+ str(password) +'\n'+
-        'Blue Side ADC: ' + str(blue_ADC.ign) + ' playing ' + str(blue_ADC.champ) + ' ' + str(blue_ADC.rank) +'\n'+
-        'Red Side ADC: ' + str(red_ADC.ign) + ' playing ' + str(red_ADC.champ) + ' ' + str(red_ADC.rank) +'\n'+
-        'Blue Side Support: ' + str(blue_support.ign) + ' playing ' + str(blue_support.champ) + ' ' + str(blue_support.rank) +'\n'+
-        'Red Side Support: ' + str(red_support.ign) + ' playing ' + str(red_support.champ) + ' ' + str(red_support.rank) +'\n'+
-        'Elo Difference: ' + str(abs(blue_pair_rank - red_pair_rank)))
-        #channel = bot.get_channel(channel_name) #1063664070034718760) 
-        #await bot.get_channel(channel_name).send(match_info) #This needs to be set every time the bot turns on, surely there is a way to save this.
-        await user.send(match_info) 
-#++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-#++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-#++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-#++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-#++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-#Updated pop_queue
-
-@tasks.loop(seconds=0) #make 300 in final deploy
-async def choose_players(lane:str,mmr_band):
-    players = []
-    lane_queue = Queues[lane +'_queue']        
-    def mmr_check(blue_laner,red_laner, mmr_band): #returning none for some reason
-        delta_mmr = abs(blue_laner.rank - red_laner.rank)
-        if  delta_mmr <= mmr_band: #1000-3000 =/= 2000 this is false so 
-            print('if 1')
-            return True 
-        elif delta_mmr >= mmr_band:
-            red_laner_2 = random.choice(list(lane_queue.values()))
-            new_delta = abs(blue_laner.rank - red_laner_2.rank)
-            if delta_mmr > new_delta:
-                del lane_queue[red_laner_2.disc_name]  
-                return red_laner_2
-            else:
-                return red_laner
-        elif mmr_band == 2000: 
-            print ('elif 1')
-            return True 
-    blue_laner = random.choice(list(lane_queue.values()))
-    players.append(blue_laner)
-    del lane_queue[blue_laner.disc_name]                       
-    red_laner = random.choice(list(lane_queue.values()))          
-    del lane_queue[red_laner.disc_name] 
-    checked_mmr = mmr_check(blue_laner,red_laner,100)
-    while (len(lane_queue)) == 1:       
-        if checked_mmr == True:
-            print('red laner is still' + red_laner.disc_name) #delete when finished
-            players.append(red_laner)
-            await players
-            return players
-        elif checked_mmr == Player:
-            print('looped thru elif1') #delete when finished
-            red_player_2 = checked_mmr
-            players.append(red_player_2)
-            await players
-            return players
-        else:
-        #   sleep(0) #change duration after testing
-            print('old mmr: ' + str(mmr_band) + 'looped') #delete when finished
-            mmr_band += 100
-            print('new mmr: ' + str(mmr_band))  #delete when finished  
-            checked_mmr = mmr_check(blue_laner,red_laner,mmr_band)
-    async def match_notification(players:list):      
-        blue_player = players[0]
-        red_player = players[1]
-        top_rank_delta = abs(blue_player.rank - red_player.rank)
-        lobby_creator = random.choice(players).ign
-        lobby_name = lobby_creator +"'s Lobby" + ' ' + str(random.randint(0,105))
-        password = 'RSS' + str(random.randint(0,10043)) 
-        match_info = (  
-        'Lobby Creator: ' + str(lobby_creator) +'\n'+ 
-        'Lobby Name: '+ str(lobby_name) +'\n'+
-        'Password: '+ str(password) +'\n'+
-        'Blue Side : ' + str(blue_player.ign) + ' playing ' + str(blue_player.champ) + ' ' + str(blue_player.rank) +'\n'+
-        'Red Side : ' + str(red_player.ign) + ' playing ' + str(red_player.champ) + ' ' + str(red_player.rank) +'\n'+
-        'Elo Difference: ' + str(top_rank_delta))
-        #channel = bot.get_channel(channel_name) #1063664070034718760) 
-        for player in player: 
-            user = bot.get_user(player.disc_id)
-        #await channel.send(match_info) 
-        await user.send(match_info)
+@tasks.loop(seconds=3) #make 5min in final deploy
+async def pop_queue():  #currently looping forever make it so the players are removed from the queue when added to a match.
     if len(Top_queue)>=2:
-        top_players = choose_players('Top',100)
-        await match_notification(top_players)
+        choose_solo('Top')
     if len(Mid_queue)>=2:
-        mid_players = choose_players('Mid',100)
-        await match_notification(mid_players)
-    #if len(ADC_queue)>=2 and len(Sup_queue)>=2:: # Merge the other pop_queue here
-
+        choose_solo('Mid')
+    if len(ADC_queue) >= 2 and len(Sup_queue) >= 2:
+        choose_duo()
 bot.run(token)                                                                                                                                           
