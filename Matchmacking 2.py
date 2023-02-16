@@ -32,8 +32,9 @@ async def send(recipients,msg,DM:bool,channel:bool,channel_name:int):
 def password():
         pwd = ''
         for i in range(13):
-            pwd += ''.join(secrets.choice(string.ascii_letters + string.digits))
-        print(' '.join('Password:',pwd))
+            pwd += secrets.choice(string.ascii_letters + string.digits)
+        return pwd
+
 def heads_or_tails():
     coin = ['H','T']
     return random.choice(coin)
@@ -68,9 +69,9 @@ class Match:
         self.lane = lane
         self.role = role
         self.players = players
-        self.creator = (random.choice(list(players[lane]['Blue '+ role].keys()))).disc_name
+        self.creator = players[lane]['Blue '+role].disc_name
         self.pwd = password() #can I do this reference a class' method inside the class?
-        self.diff = delta_mmr(players[0],players[1])
+        self.diff = delta_mmr(players[lane]['Blue '+role],players[lane]['Red '+role])
     def lane_role(lane,role=None): #Does this need to be a function or can it just be if/then
         if lane == 'Bot':
             return Queues[lane][role] 
@@ -116,26 +117,29 @@ class Match:
         return players_dict           
                 
                
-    def info():
-        creator_msg = ''.join('Lobby Creator: ', Match.creator) 
-        name_msg = ''.join('Lobby Name: ', creator_msg,"'s Lobby")
-        type_msg = ''.join('Lobby Type: ', Match.lane)
-        pwd_msg =  ''.join(Match.pwd)
-        diff_msg = ' '.join('Elo Difference:',str(Match.diff))    
-        print( '\n'.join(creator_msg,name_msg,type_msg,pwd_msg,diff_msg))                 
+    def info(Match):
+        creator_msg = 'Lobby Creator: ' + Match.creator 
+        name_msg = 'Lobby Name: ' + Match.creator + "'s Lobby"
+        type_msg = 'Lobby Type: '+ Match.lane
+        pwd_msg =  'Password: ' + Match.pwd
+        diff_msg = 'Elo Difference: '+ str(Match.diff)  
+        #these all need to become sends/responds
+        print(creator_msg)
+        print(name_msg)
+        print(type_msg)
+        print(pwd_msg)
+        print(diff_msg)
 
 
 #@tasks.loop(minutes=0) #make 5min in final deploy
 if len(Top_queue)>=2:
     Top_players = Match.choose_players('Top','Top')
-    print(Top_players) # => it is not appending the blue player for some reason
-    #Top_match = Match('Top','Top',Top_players)
-    #Top_match_msg = Top_match.info()
-    #fill in the match class
-#if len(Mid_queue)>=2:
-#    Mid_players = Match.choose_players('Mid')
-#    Mid_match = Match('Mid','Mid',Mid_players)
-#    Mid_match_msg = asyncio.run(send(Mid_players))
+    Top_match = Match('Top','Top',Top_players)
+    Top_match_msg = Top_match.info()
+if len(Mid_queue)>=2:
+    Mid_players = Match.choose_players('Mid','Mid')
+    Mid_match = Match('Mid','Mid',Mid_players)
+    Mid_match_msg = Mid_match.info
 #if len(ADC_queue) > 2 and len(Sup_queue) > 2:
 #    ADC_players = Match.choose_players('ADC','ADC')
 #    Sup_players = Match.choose_players('Support','Support')
