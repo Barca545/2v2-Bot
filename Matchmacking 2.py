@@ -70,9 +70,9 @@ class Match:
         self.role = role
         self.players = players
         self.creator = players[lane]['Blue '+role].disc_name
-        self.pwd = password() #can I do this reference a class' method inside the class?
-        self.diff = delta_mmr(players[lane]['Blue '+role],players[lane]['Red '+role])
-    def lane_role(lane,role=None): #Does this need to be a function or can it just be if/then
+        self.pwd = password()
+        self.solodiff = delta_mmr(players[lane]['Blue '+role],players[lane]['Red '+role])
+    def lane_role(lane,role=None):
         if lane == 'Bot':
             return Queues[lane][role] 
         elif lane=='Top' or 'Mid':
@@ -85,7 +85,7 @@ class Match:
                 if best_laner is None or delta_mmr(blue_laner,best_laner) > delta_mmr(blue_laner,test_laner):
                     best_laner = test_laner
         return best_laner 
-    def choose_players(lane:str,role=None): #Since this is an async function it needs awaitables                      
+    def choose_players(lane:str,role=None): 
         while True: #Condition needs to be tweaked  
             lane_queue = Match.lane_role(lane,role)        
             first_player = lane_queue[list(lane_queue.keys())[0]]
@@ -114,9 +114,7 @@ class Match:
             elif heads_or_tails() == 'F':
                 players_dict[lane]['Blue '+ role] = first_player
                 players_dict[lane]['Red '+ role] = second_player
-        return players_dict           
-                
-               
+        return players_dict                                       
     def info(Match):
         creator_msg = 'Lobby Creator: ' + Match.creator 
         name_msg = 'Lobby Name: ' + Match.creator + "'s Lobby"
