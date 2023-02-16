@@ -8,7 +8,6 @@ from discord.commands import Option
 import dotenv 
 dotenv.load_dotenv()
 from Matchmaking import *
-from Matchmaking import Player
 
 #Discord Bot Initiation
 token = str(os.getenv("DISC_TOKEN"))

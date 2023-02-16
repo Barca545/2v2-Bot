@@ -121,19 +121,18 @@ class Match:
                 players_dict['Blue'] = first_player
                 players_dict['Red'] = second_player
         return players_dict   
-    def choose_players(role,queue): 
-        while True: #Condition needs to be tweaked  
-            queue = Match.lane_role(role)        
-            first_player = queue[list(queue.keys())[0]]
-            for i in range(0,2100,100):
-                second_player = Match.choose_2nd(first_player,queue)
-                mmr_band = i
-                if delta_mmr(first_player.rank,second_player.rank) <= mmr_band or mmr_band == 2000:
-                    del [first_player.disc_name]
-                    del [second_player.disc_name]
-                    return Match.side_selection(first_player,second_player)
-                elif delta_mmr(first_player.rank,second_player.rank) > mmr_band:
-                    time.sleep(0)                                     
+    def choose_players(role,queue):        
+        queue = Match.lane_role(role)        
+        first_player = queue[list(queue.keys())[0]]
+        for i in range(0,2100,100):
+            second_player = Match.choose_2nd(first_player,queue)
+            mmr_band = i
+            if delta_mmr(first_player.rank,second_player.rank) <= mmr_band or mmr_band == 2000:
+                del queue[first_player.disc_name]
+                del queue[second_player.disc_name]
+                return Match.side_selection(first_player,second_player)
+            elif delta_mmr(first_player.rank,second_player.rank) > mmr_band:
+                time.sleep(0)                                     
     def info(self):
         creator_msg = 'Lobby Creator: ' + self.creator 
         name_msg = 'Lobby Name: ' + self.creator + "'s Lobby"
