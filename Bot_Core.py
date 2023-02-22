@@ -1,52 +1,13 @@
 import random
-import os 
-from time import sleep
 from Bot_initiate import *
-import discord
-from discord.ext import commands, tasks
-from discord.commands import Option 
-import dotenv 
-dotenv.load_dotenv()
 from Matchmaking import *
-
-#Discord Bot Initiation
-token = str(os.getenv("DISC_TOKEN"))
-intents = discord.Intents.all()
-bot = commands.Bot(command_prefix='/', intents=intents) 
-
-#import Matchmacking
+from asyncio import sleep
+import re
 
 #Supp_Champs = ['Alistar', 'Amumu','Ashe', 'Blitzcrank','Braum','Heimerdinger','Janna','Leona','Lulu','Lux','Morgana','Nami','Nautilus','Pyke','Rakan','Renata Glasc','Seraphine','Sona','Soraka','Swain','Tham Kench','Taric','Thresh','Zilean','Zyra',]
 #ADC_Champs = ['Aphelios','Ashe','Caitlyn','Draven','Ezreal','Graves','Jhin','Jinx',"Kai'sa",'Kalista','Kindred',"Kog'ma",'Lucian','Miss Fortune','Samira','Senna','Quinn','Sivir','Tristana','Twitch','Varus','Vayne','Xayah','Zeri','Yasuo']
 #full list of support champs #Supp_Champs = ['Alistar', 'Amumu', 'Ashe', 'Bard', 'Blitzcrank', 'Brand','Braum','Heimerdinger','Ivern','Janna','Karma', 'Leona','Lulu','Lux','Malphite','Maokai','Morgana','Nami','Nautilus','Pantheon','Pyke','Rakan','Renata Glasc','Senna','Seraphine','Sona','Soraka','Swain','Tham Kench','Taric','Thresh',"Vel'Koz",'Xerath','Yuumi','Zac','Zilean','Zyra',]
 
-#Building the Player class
-class Player:
-    def __init__ (self, disc_name, disc_id, ign, rank, champ):
-        self.disc_name = disc_name
-        self.disc_id = disc_id
-        self.ign = ign
-        self.rank = rank 
-        self.champ = champ
-
-    #def __repr__(self) -> str:#supposed to make the object print as a string when I print it but is not working for some reason.
-    #    pass
-#Dummy players for test 
-dummy_supp_1 = Player('Test1#303030', 221397446066962435, 'Test 1', 1000, 'Lulu',  )
-dummy_supp_2 = Player('Test2#303030',221397446066962435,'Test 3', 3000, 'Soraka')
-dummy_adc_1 = Player('Test3#303030',221397446066962435, 'Test 3', 4500, 'MF')
-
-#Creating ADC_queue & support_queue list 
-ADC_queue = {'Test3#303030': dummy_adc_1} #Remove dummy players
-Sup_queue = {'Test1#303030': dummy_supp_1,'Test2#303030': dummy_supp_2} #Remove dummy players
-Mid_queue = {'Test1#303030': dummy_supp_1,'Test2#303030': dummy_supp_2}
-Top_queue = {'Test1#303030': dummy_supp_1,'Test2#303030': dummy_supp_2}
-Queues = {
-    'ADC_queue': ADC_queue,
-    'Support_queue': Sup_queue,
-    'Mid_queue': Mid_queue,
-    'Top_queue': Top_queue
-    } 
 #ADC_queue = {} 
 #Support_queue = {}
 
@@ -201,12 +162,36 @@ async def showmidqueue(ctx):
         str(len(Mid_queue)) + ' in the Mid queue')
 
 #Pop queue    
-@tasks.loop(seconds=3) #make 5min in final deploy
+@tasks.loop(seconds=30) #make 5min in final deploy
 async def pop_queue():  #currently looping forever make it so the players are removed from the queue when added to a match.
     if len(Top_queue)>=2:
-        choose_solo('Top')
+        match_info = choose_solo('Top')
+        players = match_info[0] 
+        match = match_info[1]
+        creator_msg = match[0]
+        name_msg = match[1]
+        type_msg = match[2]
+        pwd_msg = match[3]
+        bluelaner = match[4][0]
+        redlaner = match[4][1]
+        diff_msg = match[5]
+        users = (players['Blue'],players['Red'])
+        await popmsg(users,str(creator_msg) + '\n' + str(name_msg) + '\n' + str(type_msg) + '\n' + str(pwd_msg) +  '\n' + str(bluelaner) + '\n' + str(redlaner) + '\n' + str(diff_msg),DM=True,channel=False,channel_name=False)
     if len(Mid_queue)>=2:
-        choose_solo('Mid')
-    if len(ADC_queue) >= 2 and len(Sup_queue) >= 2:
-        choose_duo()
+        match_info = choose_solo('Mid')
+        players = match_info[0] 
+        match = match_info[1]
+        creator_msg = match[0]
+        name_msg = match[1]
+        type_msg = match[2]
+        pwd_msg = match[3]
+        bluelaner = match[4][0]
+        redlaner = match[4][1]
+        diff_msg = match[5]
+        users = (players['Blue'],players['Red'])
+        await popmsg(users,str(creator_msg) + '\n' + str(name_msg) + '\n' + str(type_msg) + '\n' + str(pwd_msg) +  '\n' + str(bluelaner) + '\n' + str(redlaner) + '\n' + str(diff_msg),DM=True,channel=False,channel_name=False)
+#    if len(ADC_queue) >= 2 and len(Sup_queue) >= 2:
+#       await choose_duo()
+
+
 bot.run(token)                                                                                                                                           
