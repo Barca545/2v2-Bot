@@ -1,30 +1,15 @@
 import random
-import Bot_initiate
-import warnings
+from Bot_initiate import *
 import secrets
 import string
 import time
-import os 
-import discord
-from discord.ext import commands, tasks
-from discord.commands import Option 
-import dotenv 
-import re
-
-#dotenv In
-dotenv.load_dotenv()
-warnings.filterwarnings("ignore", category=RuntimeWarning)
-
-#Discord Bot Initiation
-token = str(os.getenv("DISC_TOKEN"))
-intents = discord.Intents.all()
-bot = commands.Bot(command_prefix='/', intents=intents) 
+from Queues import *
 
 #Could these be inside another class as a method maybe include pwd too?
 def delta_mmr(laner_1, laner_2): 
     return abs(laner_1 - laner_2)
     
-async def send(recipients,msg,DM:bool,channel:bool,channel_name:int):     
+async def popmsg(recipients,msg,DM:bool,channel:bool,channel_name:int):     
         for j in recipients: 
             user_id = bot.get_user(j.disc_id)
         if DM == True:    
@@ -42,25 +27,6 @@ def password():
 def heads_or_tails():
     coin = ['H','T']
     return random.choice(coin)
-
-class Player:
-    def __init__ (self, disc_name, disc_id, ign, rank, role, champ):
-        self.disc_name = disc_name
-        self.disc_id = disc_id
-        self.ign = ign
-        self.rank = rank 
-        self.role = role
-        self.champ = champ
-
-#Queues: Remove dummy players
-dummy_supp_1 = Player('Test1#303030', 221397446066962435, 'Test 1', 1000, 'ADC', 'Lulu',  )
-dummy_supp_2 = Player('Test2#303030',221397446066962435,'Test 3', 3000, 'Mid', 'Soraka')
-dummy_adc_1 = Player('Test3#303030',221397446066962435, 'Test 3', 4500, 'Support','MF')
-
-Top_queue = {'Test1#303030': dummy_supp_1,'Test2#303030': dummy_supp_2, 'Test3#303030':dummy_adc_1}
-Mid_queue = {'Test1#303030': dummy_supp_1,'Test2#303030': dummy_supp_2}
-ADC_queue = {'Test3#303030': dummy_adc_1, 'Test1#303030':dummy_supp_1 } 
-Sup_queue = {'Test1#303030': dummy_supp_1,'Test2#303030': dummy_supp_2} 
 
 class Match:           
     def __init__ (self,lane:str,primary_players_dict, secondary_players_dict=None): #I don't think these args work
@@ -151,21 +117,17 @@ class Match:
             players = [blue_ADC,blue_support,red_ADC,red_support]
             diff_msg = 'Elo Difference: '+ str(self.diff)  
             #these all need to become sends/responds probably return as a list and then call each item. Are sub methods a thing?
-        print(creator_msg)
-        print(name_msg)
-        print(type_msg)
-        print(pwd_msg)
-        print(*players, sep = "\n")
-        print(diff_msg)
+        return(creator_msg, name_msg, type_msg,pwd_msg,players,diff_msg)
 
 def choose_solo(role:str): #This probably needs to be an async function.
     players = Match.choose_players(role,role)
     match = Match(role,players)
-    return match.info()
+    match_players = (players, match.info())
+    return match_players
 def choose_duo(): #This probably needs to be an async function.
     ADC_players = Match.choose_players('Bot','ADC')
     Sup_players = Match.choose_players('Bot','Support')
     Bot_match = Match('Bot',ADC_players,Sup_players)
-    return Bot_match.info()    
-
+    match_players = (ADC_players, Sup_players, Bot_match.info())  
+    return match_players
 

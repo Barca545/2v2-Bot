@@ -4,8 +4,6 @@ import discord
 from discord.ext import commands, tasks
 from discord.commands import Option 
 import os
-import re #delete
-import string #delete
 
 #dotenv In
 dotenv.load_dotenv()
